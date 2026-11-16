@@ -12,8 +12,10 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.skerik.justlogs.model.BlockRecord;
+import me.skerik.justlogs.model.ContainerRecord;
 import me.skerik.justlogs.model.LogRecord;
 import me.skerik.justlogs.storage.BlockStore;
+import me.skerik.justlogs.storage.ContainerStore;
 import me.skerik.justlogs.storage.Database;
 import me.skerik.justlogs.storage.IdCache;
 import org.jspecify.annotations.Nullable;
@@ -33,6 +35,7 @@ public final class BatchWriter {
     private final Database db;
     private final IdCache ids;
     private final BlockStore blocks;
+    private final ContainerStore containers = new ContainerStore();
     private final Logger log;
     private final Throughput throughput = new Throughput();
     private final ConcurrentLinkedQueue<Waiter> waiters = new ConcurrentLinkedQueue<>();
@@ -178,10 +181,13 @@ public final class BatchWriter {
 
     private void write(Connection conn, List<LogRecord> batch) throws SQLException {
         List<BlockRecord> blockRows = new ArrayList<>(batch.size());
+        List<ContainerRecord> containerRows = new ArrayList<>();
         for (LogRecord r : batch) {
             if (r instanceof BlockRecord b) blockRows.add(b);
+            else if (r instanceof ContainerRecord cr) containerRows.add(cr);
         }
         blocks.insert(conn, ids, blockRows);
+        containers.insert(conn, ids, containerRows);
     }
 
     private void completeWaiters() {

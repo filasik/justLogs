@@ -50,6 +50,21 @@ public final class MainCommand {
                         .executes(c -> ready(c, (ctx, s) -> ctx.lookup.page(s, IntegerArgumentType.getInteger(c, "n")))))
                 .build();
 
+        LiteralCommandNode<CommandSourceStack> rollback = Commands.literal("rollback")
+                .requires(has("justlogs.rollback"))
+                .then(Commands.argument("parameters", StringArgumentType.greedyString())
+                        .suggests(QuerySuggestions.provider())
+                        .executes(c -> ready(c, (ctx, s) -> ctx.rollback.start(s, StringArgumentType.getString(c, "parameters"), false))))
+                .build();
+        LiteralCommandNode<CommandSourceStack> restore = Commands.literal("restore")
+                .requires(has("justlogs.restore"))
+                .then(Commands.argument("parameters", StringArgumentType.greedyString())
+                        .suggests(QuerySuggestions.provider())
+                        .executes(c -> ready(c, (ctx, s) -> ctx.rollback.start(s, StringArgumentType.getString(c, "parameters"), true))))
+                .build();
+        Predicate<CommandSourceStack> changesWorld = src -> src.getSender().hasPermission("justlogs.rollback")
+                || src.getSender().hasPermission("justlogs.restore");
+
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("justlogs")
                 .requires(has("justlogs.use"))
                 .executes(this::info)
@@ -58,6 +73,14 @@ public final class MainCommand {
                 .then(inspect).then(alias("i", inspect, "justlogs.inspect"))
                 .then(lookup).then(alias("l", lookup, "justlogs.lookup"))
                 .then(page).then(alias("p", page, "justlogs.lookup"))
+                .then(rollback).then(alias("rb", rollback, "justlogs.rollback"))
+                .then(restore).then(alias("rs", restore, "justlogs.restore"))
+                .then(Commands.literal("undo").requires(has("justlogs.rollback"))
+                        .executes(c -> ready(c, (ctx, s) -> ctx.rollback.undo(s))))
+                .then(Commands.literal("confirm").requires(changesWorld)
+                        .executes(c -> ready(c, (ctx, s) -> ctx.rollback.confirm(s))))
+                .then(Commands.literal("cancel").requires(changesWorld)
+                        .executes(c -> ready(c, (ctx, s) -> ctx.rollback.cancel(s))))
                 .then(Commands.literal("near")
                         .requires(has("justlogs.lookup"))
                         .executes(c -> ready(c, (ctx, s) -> ctx.lookup.lookup(s, "r:" + ctx.settings().lookup().defaultRadius() + " t:3d")))
@@ -101,12 +124,14 @@ public final class MainCommand {
             return Command.SINGLE_SUCCESS;
         }
         sender.sendMessage(m.get("help.header"));
-        for (String key : new String[] {"inspect", "lookup", "near", "page", "status", "reload"}) {
+        for (String key : new String[] {"inspect", "lookup", "near", "page", "rollback", "restore", "undo", "confirm", "status", "reload"}) {
             // Only the commands this sender may use
             String permission = switch (key) {
                 case "inspect" -> "justlogs.inspect";
                 case "status" -> "justlogs.status";
                 case "reload" -> "justlogs.reload";
+                case "rollback", "undo", "confirm" -> "justlogs.rollback";
+                case "restore" -> "justlogs.restore";
                 default -> "justlogs.lookup";
             };
             if (sender.hasPermission(permission)) {
@@ -155,6 +180,8 @@ public final class MainCommand {
                 Messages.text("written", String.valueOf(ctx.writer.written()))));
         String error = ctx.writer.lastError();
         if (error != null) sender.sendMessage(m.get("status.writer-error", Messages.text("error", error)));
+        sender.sendMessage(m.get("status.rollback", Messages.text("state", m.raw(ctx.rollback.busy() ? "status.state-busy" : "status.state-idle")),
+                Messages.text("pending", String.valueOf(ctx.rollback.pendingCount()))));
         sender.sendMessage(m.get("status.inspecting", Messages.text("count", String.valueOf(ctx.inspector.count()))));
     }
 

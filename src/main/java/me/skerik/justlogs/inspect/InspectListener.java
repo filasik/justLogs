@@ -1,6 +1,7 @@
 package me.skerik.justlogs.inspect;
 
 import me.skerik.justlogs.Context;
+import me.skerik.justlogs.listener.Containers;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,6 +31,12 @@ public final class InspectListener implements Listener {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
         event.setCancelled(true); // never break, place or use anything while inspecting
+        if (action == Action.RIGHT_CLICK_BLOCK && Containers.isContainer(clicked)) {
+            // A container shows what was put in and taken out, not the spot next to it
+            Block home = Containers.normalize(clicked);
+            ctx.lookup.inspectContainer(player, home.getWorld().getName(), home.getX(), home.getY(), home.getZ());
+            return;
+        }
         Block target = action == Action.LEFT_CLICK_BLOCK ? clicked : clicked.getRelative(event.getBlockFace());
         ctx.lookup.inspect(player, target.getWorld().getName(), target.getX(), target.getY(), target.getZ());
     }

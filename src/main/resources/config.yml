@@ -7,7 +7,7 @@
 # Config format version. Do not change: when you update the plugin, options that are new in the
 # newer version are added to this file automatically (your values stay, a backup is saved first).
 # (Developer: raise this number whenever you add a key, and add the key with its comment here.)
-config-version: 1
+config-version: 4
 
 # Language of all player-facing messages: en, cs.
 # The files plugins/JustLogs/messages_<locale>.yml are yours to edit; missing keys fall back to the built-in text.
@@ -35,6 +35,19 @@ logging:
   block-break: true
   # Water and lava buckets
   buckets: true
+  # Fire: ignited and burned blocks, attributed to the player who lit it (else #fire, #lava, #lightning)
+  fire: true
+  # Explosions of TNT, creepers, beds, ...; TNT is attributed to the player who lit it (else #tnt)
+  explosions: true
+  # Trees and mushrooms growing (bone meal player, else #nature)
+  growth: true
+  # Leaves rotting away (very noisy, off by default)
+  leaf-decay: false
+  # Endermen, farmland trampling, silverfish and other mobs changing blocks
+  entity-changes: true
+  # Items put into and taken out of chests, barrels, shulker boxes, hoppers, furnaces, ... (a:container). Broken chests also
+  # keep their contents so a rollback can put them back.
+  containers: true
   # Worlds that are never logged (exact names)
   worlds-blacklist: []
 
@@ -60,6 +73,18 @@ lookup:
   count-cap: 100000
   # How long /justlogs page keeps the last result of a sender
   result-ttl-seconds: 300
+
+rollback:
+  # Most log rows one rollback/restore may load. Narrow the query (u:, r:, t:) if you hit it.
+  max-rows: 500000
+  # A rollback/restore changing more blocks than this waits for /jo confirm (0 = always ask)
+  confirm-above: 10000
+  # Seconds a pending preview or confirmation stays valid
+  confirm-expire-seconds: 60
+  # Time budget per server tick while changing blocks; a big rollback takes several ticks instead of freezing the server
+  ms-per-tick: 8
+  # Largest preview (ghost blocks shown only to you); bigger rollbacks need /jo confirm without preview
+  preview-max-blocks: 50000
 
 storage:
   # sqlite  = single file in the plugin folder, zero setup (default)

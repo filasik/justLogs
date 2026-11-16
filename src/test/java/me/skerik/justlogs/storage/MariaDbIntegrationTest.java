@@ -98,7 +98,7 @@ class MariaDbIntegrationTest {
                 assertTrue(page.next() != null);
                 var page2 = compiler.lookup(c, all, Origin.NONE, page.next(), 100);
                 assertTrue(page2.rows().get(0).id() < page.rows().get(99).id(), "keyset paging continues below the cursor");
-                assertEquals("oak_stairs", compiler.lookup(c, QueryParser.parse("b:oak_stairs", NOW, QueryParser.NO_TAGS, 0), Origin.NONE, null, 1).rows().get(0).newMaterial());
+                assertEquals("oak_stairs", compiler.lookup(c, QueryParser.parse("b:oak_stairs", NOW, QueryParser.NO_TAGS, 0), Origin.NONE, null, 1).rows().get(0) instanceof me.skerik.justlogs.model.BlockEntry be ? be.newMaterial() : "");
             }
         }
     }

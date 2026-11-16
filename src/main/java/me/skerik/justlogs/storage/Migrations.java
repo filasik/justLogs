@@ -46,7 +46,7 @@ public final class Migrations {
     /** Frozen column group of v1 fact tables: position of the event. */
     private static final String POS = "world_id {U16} NOT NULL, x INT NOT NULL, y {I16} NOT NULL, z INT NOT NULL";
 
-    private static final List<Version> VERSIONS = List.of(v1());
+    private static final List<Version> VERSIONS = List.of(v1(), v2(), v3());
 
     private static Version v1() {
         List<String> s = new ArrayList<>();
@@ -160,6 +160,22 @@ public final class Migrations {
         s.add("CREATE UNIQUE INDEX {P}web_sessions_token ON {P}web_sessions (token_hash)");
         s.add("CREATE INDEX {P}web_sessions_user ON {P}web_sessions (user_id)");
         return new Version(List.copyOf(s), true);
+    }
+
+    /** v2: which block rows a rollback/restore touched, so /jo undo can reverse exactly that. */
+    private static Version v2() {
+        List<String> s = new ArrayList<>();
+        s.add("CREATE TABLE {P}rollback_rows (rollback_id {U32} NOT NULL, block_id {U64} NOT NULL,"
+                + " PRIMARY KEY (rollback_id, block_id)){TBL_NOROWID}");
+        return new Version(List.copyOf(s), false);
+    }
+
+    /** v3: the rows of a container rollback (jl_container ids), kept apart from the block rows of v2. */
+    private static Version v3() {
+        List<String> s = new ArrayList<>();
+        s.add("CREATE TABLE {P}rollback_crows (rollback_id {U32} NOT NULL, container_id {U64} NOT NULL,"
+                + " PRIMARY KEY (rollback_id, container_id)){TBL_NOROWID}");
+        return new Version(List.copyOf(s), false);
     }
 
     public static int latestVersion() {

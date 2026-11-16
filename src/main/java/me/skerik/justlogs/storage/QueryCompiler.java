@@ -10,6 +10,8 @@ import java.util.StringJoiner;
 import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.BlockEntry;
 import me.skerik.justlogs.model.Category;
+import me.skerik.justlogs.model.ContainerEntry;
+import me.skerik.justlogs.model.LogEntry;
 import me.skerik.justlogs.query.LogQuery;
 import me.skerik.justlogs.query.Origin;
 import me.skerik.justlogs.query.QuerySyntaxException;
@@ -42,7 +44,18 @@ public final class QueryCompiler {
     }
 
     /** One page of results. {@code next} is null on the last page. */
-    public record Page(List<BlockEntry> rows, @Nullable Cursor next) {
+    public record Page(List<LogEntry> rows, @Nullable Cursor next) {
+    }
+
+    /** Which table a query reads: container actions only (a:container, a:deposit...) go to jl_container, the rest to jl_block. */
+    public static Category categoryOf(LogQuery q) {
+        if (q.actions().isEmpty()) return Category.BLOCK;
+        for (Action a : q.actions()) if (a.category() != Category.CONTAINER) return Category.BLOCK;
+        return Category.CONTAINER;
+    }
+
+    private static String table(Category cat) {
+        return Migrations.table(cat == Category.CONTAINER ? "container" : "block");
     }
 
     private final IdCache ids;
@@ -54,16 +67,19 @@ public final class QueryCompiler {
     /** Runs the lookup on the given connection (call it from {@code Database.supply}). */
     public Page lookup(Connection c, LogQuery query, Origin origin, @Nullable Cursor cursor, int limit)
             throws SQLException, QuerySyntaxException {
-        Where where = where(c, query, origin, cursor);
+        Category cat = categoryOf(query);
+        Where where = where(c, query, origin, cursor, cat);
         if (where == null) return new Page(List.of(), null);
-        String sql = BlockStore.SELECT + where.sql + " ORDER BY b.time DESC, b.id DESC LIMIT " + (limit + 1);
+        String sql = (cat == Category.CONTAINER ? ContainerStore.SELECT : BlockStore.SELECT) + where.sql
+                + " ORDER BY b.time DESC, b.id DESC LIMIT " + (limit + 1);
         try (PreparedStatement ps = c.prepareStatement(sql)) {
             bind(ps, where.params);
             try (ResultSet rs = ps.executeQuery()) {
-                List<BlockEntry> rows = BlockStore.read(rs, limit + 1);
+                List<LogEntry> rows = new ArrayList<>(cat == Category.CONTAINER
+                        ? ContainerStore.read(rs, limit + 1) : BlockStore.read(rs, limit + 1));
                 if (rows.size() > limit) {
                     rows = new ArrayList<>(rows.subList(0, limit));
-                    BlockEntry last = rows.get(rows.size() - 1);
+                    LogEntry last = rows.get(rows.size() - 1);
                     return new Page(rows, new Cursor(last.time(), last.id()));
                 }
                 return new Page(rows, null);
@@ -73,9 +89,10 @@ public final class QueryCompiler {
 
     /** Number of matching rows, counted up to {@code cap} (so a huge result does not scan everything). */
     public int count(Connection c, LogQuery query, Origin origin, int cap) throws SQLException, QuerySyntaxException {
-        Where where = where(c, query, origin, null);
+        Category cat = categoryOf(query);
+        Where where = where(c, query, origin, null, cat);
         if (where == null) return 0;
-        String sql = "SELECT COUNT(*) FROM (SELECT 1 FROM " + Migrations.table("block") + " b" + where.sql + " LIMIT " + cap + ") t";
+        String sql = "SELECT COUNT(*) FROM (SELECT 1 FROM " + table(cat) + " b" + where.sql + " LIMIT " + cap + ") t";
         try (PreparedStatement ps = c.prepareStatement(sql)) {
             bind(ps, where.params);
             try (ResultSet rs = ps.executeQuery()) {
@@ -84,18 +101,52 @@ public final class QueryCompiler {
         }
     }
 
+    /**
+     * Rows a rollback or restore would touch, oldest first. {@code rolledBack}: false = rows not yet rolled back
+     * (rollback), true = rows that were rolled back (restore). Returns at most {@code max + 1} rows so the caller
+     * can tell "too many".
+     */
+    public List<BlockEntry> forChange(Connection c, LogQuery query, Origin origin, boolean rolledBack, int max)
+            throws SQLException, QuerySyntaxException {
+        Where where = where(c, query, origin, null, Category.BLOCK);
+        if (where == null) return List.of();
+        String sql = BlockStore.SELECT + where.sql + (where.sql.isEmpty() ? " WHERE " : " AND ")
+                + "(b.flags & 1) = " + (rolledBack ? 1 : 0) + " ORDER BY b.time ASC, b.id ASC LIMIT " + (max + 1);
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            bind(ps, where.params);
+            try (ResultSet rs = ps.executeQuery()) {
+                return BlockStore.read(rs, max + 1);
+            }
+        }
+    }
+
+    /** Container version of {@link #forChange}: rows with their item bytes, oldest first. */
+    public List<ContainerEntry> forContainerChange(Connection c, LogQuery query, Origin origin, boolean rolledBack, int max)
+            throws SQLException, QuerySyntaxException {
+        Where where = where(c, query, origin, null, Category.CONTAINER);
+        if (where == null) return List.of();
+        String sql = ContainerStore.SELECT_WITH_DATA + where.sql + (where.sql.isEmpty() ? " WHERE " : " AND ")
+                + "(b.flags & 1) = " + (rolledBack ? 1 : 0) + " ORDER BY b.time ASC, b.id ASC LIMIT " + (max + 1);
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            bind(ps, where.params);
+            try (ResultSet rs = ps.executeQuery()) {
+                return ContainerStore.read(rs, max + 1);
+            }
+        }
+    }
+
     private record Where(String sql, List<Object> params) {
     }
 
     /** @return null when the filters cannot match anything (unknown user, world, material...) */
-    private @Nullable Where where(Connection c, LogQuery q, Origin origin, @Nullable Cursor cursor)
+    private @Nullable Where where(Connection c, LogQuery q, Origin origin, @Nullable Cursor cursor, Category cat)
             throws SQLException, QuerySyntaxException {
         List<String> conditions = new ArrayList<>();
         List<Object> params = new ArrayList<>();
 
         if (!q.actions().isEmpty()) {
             List<Integer> blockActions = new ArrayList<>();
-            for (Action a : q.actions()) if (a.category() == Category.BLOCK) blockActions.add(a.id());
+            for (Action a : q.actions()) if (a.category() == cat) blockActions.add(a.id());
             if (blockActions.isEmpty()) return null;
             conditions.add("b.action IN (" + placeholders(blockActions.size()) + ")");
             params.addAll(blockActions);
@@ -117,10 +168,11 @@ public final class QueryCompiler {
                 if (!q.materialsNegated()) return null;
             } else {
                 String in = placeholders(matIds.size());
-                String clause = "(b.old_mat IN (" + in + ") OR b.new_mat IN (" + in + "))";
+                String clause = cat == Category.CONTAINER ? "b.mat IN (" + in + ")"
+                        : "(b.old_mat IN (" + in + ") OR b.new_mat IN (" + in + "))";
                 conditions.add(q.materialsNegated() ? "NOT " + clause : clause);
                 params.addAll(matIds);
-                params.addAll(matIds);
+                if (cat != Category.CONTAINER) params.addAll(matIds);
             }
         }
 

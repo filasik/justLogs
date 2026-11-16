@@ -65,6 +65,18 @@ public final class LookupService {
         run(player, query, Origin.NONE, true, world, x, y, z);
     }
 
+    /** Inspector click on a container: who put what in and took what out. */
+    public void inspectContainer(Player player, String world, int x, int y, int z) {
+        if (!player.hasPermission("justlogs.lookup.container")) {
+            player.sendMessage(ctx.messages().get("error.no-permission"));
+            return;
+        }
+        LogQuery query = new LogQuery(List.of(), false, 0, 0, null, Radius.cube(0),
+                Set.of(me.skerik.justlogs.model.Action.DEPOSIT, me.skerik.justlogs.model.Action.WITHDRAW), List.of("container"),
+                List.of(), false, world, new int[] {x, y, z}, Set.of());
+        run(player, query, Origin.NONE, true, world, x, y, z);
+    }
+
     /** {@code /jo page n}: continues the sender's last result. */
     public void page(CommandSender sender, int page) {
         Messages m = ctx.messages();
@@ -114,6 +126,10 @@ public final class LookupService {
         if (unscoped) {
             if (!(sender instanceof Player)) throw new QuerySyntaxException("need-scope", q.canonical());
             q = q.withRadius(Radius.cube(lookupSettings.defaultRadius()));
+        }
+        if (QueryCompiler.categoryOf(q) == me.skerik.justlogs.model.Category.CONTAINER
+                && !sender.hasPermission("justlogs.lookup.container")) {
+            throw new QuerySyntaxException("no-container", q.canonical());
         }
         boolean global = sender.hasPermission("justlogs.lookup.global");
         if (q.radius().kind() == Radius.Kind.GLOBAL && !global) throw new QuerySyntaxException("no-global", q.canonical());
@@ -198,7 +214,7 @@ public final class LookupService {
         else ctx.scheduler.runGlobal(task);
     }
 
-    private static Origin origin(CommandSender sender) {
+    public static Origin origin(CommandSender sender) {
         if (sender instanceof Player p) {
             org.bukkit.Location l = p.getLocation();
             return new Origin(l.getWorld().getName(), l.getBlockX(), l.getBlockY(), l.getBlockZ());
@@ -206,7 +222,7 @@ public final class LookupService {
         return Origin.NONE;
     }
 
-    static UUID key(CommandSender sender) {
+    public static UUID key(CommandSender sender) {
         return sender instanceof Player p ? p.getUniqueId() : ResultCache.CONSOLE;
     }
 
@@ -215,7 +231,7 @@ public final class LookupService {
     }
 
     /** {@code b:#tag}: block tags first, then item tags. Material keys of the members. */
-    private static Optional<Set<String>> tag(String name) {
+    public static Optional<Set<String>> tag(String name) {
         NamespacedKey key;
         try {
             key = NamespacedKey.minecraft(name);

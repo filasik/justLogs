@@ -8,6 +8,7 @@ import me.skerik.justlogs.config.Settings;
 import me.skerik.justlogs.inspect.Inspector;
 import me.skerik.justlogs.queue.BatchWriter;
 import me.skerik.justlogs.queue.LogQueue;
+import me.skerik.justlogs.rollback.RollbackService;
 import me.skerik.justlogs.storage.Database;
 import me.skerik.justlogs.storage.IdCache;
 import me.skerik.justlogs.storage.QueryCompiler;
@@ -31,6 +32,7 @@ public final class Context {
     public final Inspector inspector = new Inspector();
     public final ResultCache results = new ResultCache();
     public final LookupService lookup;
+    public final RollbackService rollback;
     public final int schemaVersion;
 
     private volatile Settings settings;
@@ -50,6 +52,7 @@ public final class Context {
         this.schemaVersion = schemaVersion;
         update(settings, messages);
         this.lookup = new LookupService(this);
+        this.rollback = new RollbackService(this);
     }
 
     public void update(Settings settings, Messages messages) {

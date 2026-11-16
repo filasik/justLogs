@@ -21,6 +21,10 @@ help:
   page: '  <gold>/jo page <white><n></white></gold> <gray>- another page of the last result'
   status: '  <gold>/jo status</gold> <gray>- queue, database and writer state'
   reload: '  <gold>/jo reload</gold> <gray>- reload config.yml and messages'
+  rollback: '  <gold>/jo rollback <white><parameters></white></gold> <gray>- put blocks back (needs <white>t:</white> and <white>u:</white> or <white>r:</white>), <white>#preview</white> shows it first'
+  restore: '  <gold>/jo restore <white><parameters></white></gold> <gray>- apply rolled-back changes again'
+  undo: '  <gold>/jo undo</gold> <gray>- reverse your last rollback or restore'
+  confirm: '  <gold>/jo confirm</gold> <gray>- run the waiting rollback; <white>/jo cancel</white> drops it'
   params-header: '<prefix> <gray>Parameters (any order, several values separated by commas):'
   params:
     - '  <gold>u:</gold><white>Notch</white> <gray>player; <white>u:!Notch</white> everybody else; <white>u:#tnt</white> a non-player source'
@@ -43,6 +47,7 @@ lookup:
   none-spot: '<prefix> <yellow>No records at <white><x>, <y>, <z></white>.'
   count: '<prefix> <gray><white><count></white> matching records for <white><query></white>.'
   row: '<gray><ago> ago <dark_gray>· <user> <dark_gray>· <action> <dark_gray>· <pos>'
+  row-verbose-container: '<dark_gray>  #<id> <time> <holder> <item> (item data: <data>)'
   row-verbose: '<dark_gray>  #<id> <time> <old_state> -> <new_state>'
   pos: '<click:run_command:''/justlogs tp <world> <x> <y> <z>''><hover:show_text:''<tooltip>''><aqua>(<x>, <y>, <z>)</aqua></hover></click>'
   pos-hover: '<gray>Teleport to <white><world></white>'
@@ -75,6 +80,8 @@ action:
   bucket-empty: '<green>poured</green> <white><new></white>'
   bucket-fill: '<red>scooped up</red> <white><old></white>'
   dispense: '<green>dispensed</green> <white><new></white>'
+  deposit: '<green>put</green> <white><amount>x <item><data></white> <gray>into <holder>'
+  withdraw: '<red>took</red> <white><amount>x <item><data></white> <gray>out of <holder>'
   worldedit: '<light_purple>edited</light_purple> <white><new></white>'
 
 status:
@@ -83,6 +90,9 @@ status:
   queue: '  <gray>Queue: <white><size></white> waiting (limit <white><limit></white>), <white><dropped></white> dropped'
   writer: '  <gray>Writer: <white><rate></white> rows/s, last flush <white><ms></white> ms, <white><written></white> rows written since start'
   writer-error: '  <red>Writer problem: <white><error></white>'
+  rollback: '  <gray>Rollback: <white><state></white>, waiting for confirmation: <white><pending></white>'
+  state-busy: 'running'
+  state-idle: 'idle'
   inspecting: '  <gray>Inspecting players: <white><count></white>'
 
 query:
@@ -101,6 +111,8 @@ query:
     need-position: '<prefix> <red>This query needs a position. Use <white>at:x,y,z</white> and <white>w:world</white>, or <white>r:#global</white>.'
     need-world: '<prefix> <red>This query needs a world. Use <white>w:world</white>.'
     need-scope: '<prefix> <red>Say what to search: <white>u:</white>, <white>r:</white>, <white>b:</white> or <white>w:</white>.'
+    rollback-scope: '<prefix> <red>Rollback and restore need a time and a scope: <white>t:</white> plus <white>u:</white> or <white>r:</white>, e.g. <white>/jo rollback u:Notch t:1h r:20</white>.'
+    no-container: '<prefix> <red>You may not look up container contents.'
     radius-too-large: '<prefix> <red>The largest radius you may use is <white><arg></white>.'
     selection-unsupported: '<prefix> <red>WorldEdit selections are not supported yet.'
     no-global: '<prefix> <red>You may not search the whole server. Use a smaller radius.'
@@ -111,3 +123,26 @@ tp:
 
 update:
   available: '<prefix> <yellow>A new version is available: <white><version></white> <click:open_url:''<url>''><aqua>[download]</aqua></click>'
+
+rollback:
+  word-rollback: 'roll back'
+  word-restore: 'restore'
+  unit-blocks: 'blocks'
+  unit-items: 'item moves'
+  preview-blocks-only: '<prefix> <red>A preview works for blocks only, not for container items.'
+  planning: '<prefix> <gray>Working out the changes...'
+  busy: '<prefix> <red>Another rollback is running. Wait until it has finished.'
+  nothing: '<prefix> <yellow>Nothing to change for <white><query></white>.'
+  too-many: '<prefix> <red>That matches more than <white><max></white> log rows. Narrow it with <white>u:</white>, <white>r:</white> or <white>t:</white>.'
+  confirm: '<prefix> <gray>This will <mode> <white><blocks></white> <unit> in <white><chunks></white> chunks (<white><query></white>). <click:run_command:/jo confirm><green>[/jo confirm]</green></click> <click:run_command:/jo cancel><red>[/jo cancel]</red></click> <dark_gray>(<seconds> s)'
+  preview: '<prefix> <gray>Preview: only you see <white><blocks></white> <unit> that would change (<white><query></white>). <click:run_command:/jo confirm><green>[/jo confirm]</green></click> <click:run_command:/jo cancel><red>[/jo cancel]</red></click> <dark_gray>(<seconds> s)'
+  preview-players-only: '<prefix> <red>A preview is shown in the game, the console cannot use <white>#preview</white>.'
+  preview-too-large: '<prefix> <red>That is too many blocks to preview (limit <white><max></white>). Run it without <white>#preview</white>.'
+  started: '<prefix> <gray>Changing <white><blocks></white> <unit> in <white><chunks></white> chunks...'
+  done: '<prefix> <green>Done. <white><blocks></white> <unit> changed in <white><chunks></white> chunks (<ms> ms). <gray>Reverse it with <white>/jo undo</white>.'
+  done-skipped: '<prefix> <green>Done. <white><blocks></white> <unit> changed in <white><chunks></white> chunks (<ms> ms), <yellow><skipped></yellow> skipped (unknown block or world). <gray>Reverse it with <white>/jo undo</white>.'
+  failed: '<prefix> <red>The rollback failed, see the console. Some blocks may have been changed.'
+  none-pending: '<prefix> <red>Nothing is waiting for confirmation.'
+  expired: '<prefix> <red>The confirmation expired. Run the command again.'
+  cancelled: '<prefix> <gray>Cancelled, nothing was changed.'
+  undo-none: '<prefix> <red>You have nothing to undo.'

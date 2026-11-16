@@ -60,8 +60,9 @@ public final class PlayerBlockListener implements Listener {
         String world = block.getWorld().getName();
         if (!cfg.worldLogged(world)) return;
         // The event fires before the block disappears, so its data is still the old state
-        offer(actor(event.getPlayer()), Action.BREAK, world, block.getX(), block.getY(), block.getZ(),
-                block.getBlockData(), null);
+        BlockData data = block.getBlockData();
+        enqueue(new BlockRecord(now(), actor(event.getPlayer()), Action.BREAK, world, block.getX(), block.getY(), block.getZ(),
+                Keys.material(data.getMaterial()), Keys.state(data), "air", "", Containers.snapshot(block)));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

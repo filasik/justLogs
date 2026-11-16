@@ -1,21 +1,51 @@
 [CENTER][SIZE=6][B]JustLogs[/B][/SIZE]
-Fast, modern block, container and player logging with rollback and a web dashboard.[/CENTER]
+Block and container logging with an inspector, lookup and rollback. Know who broke, placed, burned, blew up or took what, and put it back.[/CENTER]
 
 [SIZE=5][B]Features[/B][/SIZE]
 [LIST]
-[*]TODO
+[*]Logs blocks placed and broken by players, water and lava buckets, fire (ignite, burn), explosions, tree growth and block changes by mobs (enderman, farmland trampling).
+[*]Knows who is behind it: fire and TNT are attributed to the player who lit them, otherwise to an honest source such as [ICODE]#fire[/ICODE], [ICODE]#tnt[/ICODE] or [ICODE]#creeper[/ICODE].
+[*]Logs items put into and taken out of chests, barrels, shulker boxes, hoppers, furnaces and other containers, including named and enchanted items.
+[*]Free-form search: [ICODE]u:[/ICODE] player, [ICODE]t:[/ICODE] time ([ICODE]2d[/ICODE], [ICODE]2d-1d[/ICODE]), [ICODE]r:[/ICODE] radius, [ICODE]a:[/ICODE] action or group, [ICODE]b:[/ICODE] block or item ([ICODE]#tag[/ICODE] works), [ICODE]w:[/ICODE] world, [ICODE]at:[/ICODE] position; [ICODE]#count[/ICODE] and [ICODE]#verbose[/ICODE] flags.
+[*]Rollback, restore and undo for blocks and for container items. A broken chest comes back with its contents. Big changes wait for [ICODE]/jo confirm[/ICODE], [ICODE]#preview[/ICODE] shows ghost blocks only to you.
+[*]Changes are applied chunk by chunk within a time budget per tick; the rollback itself is not logged again.
+[*]SQLite out of the box, MariaDB/MySQL for shared databases. Writes are batched on one background thread and never block the server.
+[*]English and Czech messages, a config that updates itself (admin values and comments are kept), optional update check, bStats with an off switch.
 [/LIST]
 
 [SIZE=5][B]Commands & Permissions[/B][/SIZE]
+Root command /justlogs, aliases /jo and /jlogs. Everything is op by default.
 [LIST]
-[*][B]/command[/B] - description (permission: [ICODE]perm.node[/ICODE])
+[*][B]/justlogs inspect[/B] - Inspector mode: left click a block for its history, right click the spot next to it; right click a container for its item history (permission: [ICODE]justlogs.inspect[/ICODE])
+[*][B]/justlogs lookup <parameters>[/B] - Search the log (aliases [ICODE]/jo[/ICODE], [ICODE]/jlogs[/ICODE]; [ICODE]/jo l[/ICODE]) (permission: [ICODE]justlogs.lookup[/ICODE])
+[*][B]/justlogs near [radius][/B] - Changes around you in the last 3 days (permission: [ICODE]justlogs.lookup[/ICODE])
+[*][B]/justlogs page <n>[/B] - Another page of the last result (permission: [ICODE]justlogs.lookup[/ICODE])
+[*][B]/justlogs rollback <parameters>[/B] - Put blocks (or container items with [ICODE]a:container[/ICODE]) back; needs [ICODE]t:[/ICODE] and [ICODE]u:[/ICODE] or [ICODE]r:[/ICODE]; [ICODE]#preview[/ICODE] shows it to you first (permission: [ICODE]justlogs.rollback[/ICODE])
+[*][B]/justlogs restore <parameters>[/B] - Apply rolled-back changes again (permission: [ICODE]justlogs.restore[/ICODE])
+[*][B]/justlogs undo[/B] - Reverse your last rollback or restore (permission: [ICODE]justlogs.rollback[/ICODE])
+[*][B]/justlogs confirm / cancel[/B] - Run or drop a rollback that is waiting for confirmation (permission: [ICODE]justlogs.rollback or .restore[/ICODE])
+[*][B]/justlogs tp <world> <x> <y> <z>[/B] - Target of the clickable coordinates in results (permission: [ICODE]justlogs.teleport[/ICODE])
+[*][B]/justlogs status[/B] - Queue, writer, database and rollback state (permission: [ICODE]justlogs.status[/ICODE])
+[*][B]/justlogs reload[/B] - Reload config.yml and messages (permission: [ICODE]justlogs.reload[/ICODE])
+[*][ICODE]justlogs.lookup.container[/ICODE] - Look up container contents
+[*][ICODE]justlogs.lookup.global[/ICODE] - Search the whole server, radius above the limit
+[*][ICODE]justlogs.rollback.global[/ICODE] - Roll back without a radius
+[*][ICODE]justlogs.helper[/ICODE] - Package: look things up, never change anything
+[*][ICODE]justlogs.admin[/ICODE] - Everything
 [/LIST]
 
 [SIZE=5][B]Configuration[/B][/SIZE]
-[CODE=yaml]# TODO: ukázka z config.yml[/CODE]
+Everything is in [ICODE]plugins/JustLogs/config.yml[/ICODE] and commented: [ICODE]logging.*[/ICODE] switches for every logger, [ICODE]queue.*[/ICODE], [ICODE]lookup.*[/ICODE], [ICODE]rollback.*[/ICODE] (confirmation limit, time budget per tick, preview size) and [ICODE]storage.*[/ICODE]. New options are added to your existing file on update.
+
+[SIZE=5][B]Known limits[/B][/SIZE]
+[LIST]
+[*]Rolling back a container only restores its item contents; other tile entities (signs, banners, heads, spawners) are not restored yet.
+[*]Not logged yet: fluid flow, falling blocks, pistons, signs, entities, chat, commands, sessions, WorldEdit.
+[*]Folia support is built in (region schedulers) but has not been tested on a Folia server.
+[/LIST]
 
 [SIZE=5][B]Compatibility[/B][/SIZE]
-Paper / Purpur / Folia, Minecraft 26.3
+Paper / Purpur, Minecraft 26.3 (Folia support built in, untested). The first start needs internet access: database drivers are downloaded once from Maven Central.
 
 [SIZE=5][B]Support[/B][/SIZE]
 Issues: https://github.com/filasik/justLogs/issues

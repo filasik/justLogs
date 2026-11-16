@@ -96,7 +96,7 @@ class QueryCompilerTest {
     void anExactSpotShowsTheWholeHistoryNewestFirst() throws Exception {
         LogQuery q = new LogQuery(List.of(), false, 0, 0, null, me.skerik.justlogs.query.Radius.cube(0), java.util.Set.of(),
                 List.of(), List.of(), false, "world", new int[] {0, 64, 0}, java.util.Set.of());
-        List<BlockEntry> rows = compiler.lookup(conn, q, Origin.NONE, null, 50).rows();
+        List<BlockEntry> rows = compiler.lookup(conn, q, Origin.NONE, null, 50).rows().stream().map(r -> (BlockEntry) r).toList();
         assertEquals(2, rows.size());
         assertEquals(Action.PLACE, rows.get(0).action());
         assertEquals("dirt", rows.get(0).newMaterial());
@@ -141,7 +141,7 @@ class QueryCompilerTest {
 
     @Test
     void rowsCarryTheBlockStateAndTheUserKind() throws Exception {
-        BlockEntry stairs = lookup("b:oak_stairs", Origin.NONE, 5).rows().get(0);
+        BlockEntry stairs = (BlockEntry) lookup("b:oak_stairs", Origin.NONE, 5).rows().get(0);
         assertEquals("facing=north,half=top", stairs.newData());
         assertEquals("", stairs.oldData());
         assertTrue(stairs.userIsPlayer());

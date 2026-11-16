@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import me.skerik.justlogs.model.Action;
@@ -14,7 +15,7 @@ import me.skerik.justlogs.model.BlockRecord;
 public final class BlockStore {
 
     private static final String INSERT = "INSERT INTO " + Migrations.table("block")
-            + " (time, user_id, world_id, x, y, z, action, old_mat, old_data, new_mat, new_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + " (time, user_id, world_id, x, y, z, action, old_mat, old_data, new_mat, new_data, flags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     /** Column list shared with {@link QueryCompiler}; read with {@link #read}. */
     static final String SELECT = "SELECT b.id, b.time, u.name, u.is_player, b.action, w.name, b.x, b.y, b.z,"
@@ -25,6 +26,9 @@ public final class BlockStore {
             + " LEFT JOIN " + Migrations.table("blockdata") + " od ON od.id = b.old_data"
             + " LEFT JOIN " + Migrations.table("materials") + " nm ON nm.id = b.new_mat"
             + " LEFT JOIN " + Migrations.table("blockdata") + " nd ON nd.id = b.new_data";
+
+    /** Flag bit 1 of {@code jl_block.flags}: a row in {@code jl_block_nbt} belongs to this block row. */
+    static final int FLAG_NBT = 2;
 
     /** Resolves dictionary ids (autocommit, idempotent) and inserts the rows in one transaction. */
     public void insert(Connection c, IdCache ids, List<BlockRecord> rows) throws SQLException {
@@ -40,25 +44,70 @@ public final class BlockStore {
         Database.transaction(c, tx -> {
             try (PreparedStatement ps = tx.prepareStatement(INSERT)) {
                 for (int i = 0; i < rows.size(); i++) {
-                    BlockRecord r = rows.get(i);
-                    int[] id = resolved[i];
-                    ps.setInt(1, r.time());
-                    ps.setInt(2, id[0]);
-                    ps.setInt(3, id[1]);
-                    ps.setInt(4, r.x());
-                    ps.setInt(5, r.y());
-                    ps.setInt(6, r.z());
-                    ps.setInt(7, r.action().id());
-                    ps.setInt(8, id[2]);
-                    ps.setInt(9, id[3]);
-                    ps.setInt(10, id[4]);
-                    ps.setInt(11, id[5]);
+                    if (rows.get(i).oldNbt() != null) continue;
+                    bindRow(ps, rows.get(i), resolved[i], 0);
                     ps.addBatch();
                 }
                 ps.executeBatch();
             }
+            // Rows with a tile entity snapshot are rare (broken chests): one by one, to learn the generated id
+            for (int i = 0; i < rows.size(); i++) {
+                BlockRecord r = rows.get(i);
+                if (r.oldNbt() == null) continue;
+                long id;
+                try (PreparedStatement ps = tx.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
+                    bindRow(ps, r, resolved[i], FLAG_NBT);
+                    ps.executeUpdate();
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("no generated id for a block row");
+                        id = keys.getLong(1);
+                    }
+                }
+                try (PreparedStatement ps = tx.prepareStatement("INSERT INTO " + Migrations.table("block_nbt")
+                        + " (block_id, old_nbt) VALUES (?, ?)")) {
+                    ps.setLong(1, id);
+                    ps.setBytes(2, r.oldNbt());
+                    ps.executeUpdate();
+                }
+            }
             return null;
         });
+    }
+
+    private static void bindRow(PreparedStatement ps, BlockRecord r, int[] id, int flags) throws SQLException {
+        ps.setInt(1, r.time());
+        ps.setInt(2, id[0]);
+        ps.setInt(3, id[1]);
+        ps.setInt(4, r.x());
+        ps.setInt(5, r.y());
+        ps.setInt(6, r.z());
+        ps.setInt(7, r.action().id());
+        ps.setInt(8, id[2]);
+        ps.setInt(9, id[3]);
+        ps.setInt(10, id[4]);
+        ps.setInt(11, id[5]);
+        ps.setInt(12, flags);
+    }
+
+    /** The stored tile entity snapshots of the given block rows (only rows flagged with one are looked up). */
+    public java.util.Map<Long, byte[]> nbtFor(Connection c, List<BlockEntry> rows) throws SQLException {
+        java.util.Map<Long, byte[]> out = new java.util.HashMap<>();
+        List<Long> ids = rows.stream().filter(BlockEntry::hasNbt).map(BlockEntry::id).toList();
+        for (int from = 0; from < ids.size(); from += 500) {
+            List<Long> part = ids.subList(from, Math.min(ids.size(), from + 500));
+            String in = "?" + ", ?".repeat(part.size() - 1);
+            try (PreparedStatement ps = c.prepareStatement("SELECT block_id, old_nbt FROM " + Migrations.table("block_nbt")
+                    + " WHERE block_id IN (" + in + ")")) {
+                for (int i = 0; i < part.size(); i++) ps.setLong(i + 1, part.get(i));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        byte[] data = rs.getBytes(2);
+                        if (data != null) out.put(rs.getLong(1), data);
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     /** Reads rows produced by the {@link #SELECT} column list. */
@@ -71,7 +120,7 @@ public final class BlockStore {
             out.add(new BlockEntry(rs.getLong(1), rs.getInt(2), rs.getString(3), rs.getInt(4) != 0, action,
                     rs.getString(6), rs.getInt(7), rs.getInt(8), rs.getInt(9),
                     oldMat == null ? "" : oldMat, nullToEmpty(rs.getString(11)),
-                    newMat == null ? "" : newMat, nullToEmpty(rs.getString(13)), (rs.getInt(14) & 1) != 0));
+                    newMat == null ? "" : newMat, nullToEmpty(rs.getString(13)), (rs.getInt(14) & 1) != 0, (rs.getInt(14) & FLAG_NBT) != 0));
         }
         return out;
     }

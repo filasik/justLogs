@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.model.BlockEntry;
+import me.skerik.justlogs.model.ContainerEntry;
+import me.skerik.justlogs.model.LogEntry;
 import me.skerik.justlogs.util.Durations;
 import me.skerik.justlogs.util.Keys;
 import net.kyori.adventure.text.Component;
@@ -20,7 +22,7 @@ final class LookupRenderer {
     private LookupRenderer() {
     }
 
-    static List<Component> page(Messages m, ResultCache.Entry entry, List<BlockEntry> rows, int page, boolean hasNext,
+    static List<Component> page(Messages m, ResultCache.Entry entry, List<LogEntry> rows, int page, boolean hasNext,
                                 long nowSec, boolean verbose) {
         List<Component> out = new ArrayList<>();
         if (entry.spot()) {
@@ -30,7 +32,7 @@ final class LookupRenderer {
         } else {
             out.add(m.get("lookup.header", Messages.text("query", entry.query().canonical())));
         }
-        for (BlockEntry row : rows) {
+        for (LogEntry row : rows) {
             Component line = row(m, row, nowSec);
             out.add(row.rolledBack() ? line.decorate(TextDecoration.STRIKETHROUGH) : line);
             if (verbose) out.add(detail(m, row));
@@ -39,11 +41,16 @@ final class LookupRenderer {
         return out;
     }
 
-    private static Component row(Messages m, BlockEntry e, long nowSec) {
+    private static Component row(Messages m, LogEntry e, long nowSec) {
         Component user = m.get("lookup.user", Messages.text("name", e.user()),
                 Messages.comp("tooltip", m.get("lookup.user-hover", Messages.text("name", e.user()))));
-        Component action = m.get("action." + e.action().key(),
-                Messages.text("old", Keys.pretty(e.oldMaterial())), Messages.text("new", Keys.pretty(e.newMaterial())));
+        Component action = switch (e) {
+            case BlockEntry b -> m.get("action." + e.action().key(),
+                    Messages.text("old", Keys.pretty(b.oldMaterial())), Messages.text("new", Keys.pretty(b.newMaterial())));
+            case ContainerEntry c -> m.get("action." + e.action().key(), Messages.text("amount", String.valueOf(c.amount())),
+                    Messages.text("item", Keys.pretty(c.material())), Messages.text("holder", Keys.pretty(c.holderMaterial())),
+                    Messages.text("data", c.hasData() ? "*" : ""));
+        };
         Component pos = m.get("lookup.pos", Messages.text("x", String.valueOf(e.x())), Messages.text("y", String.valueOf(e.y())),
                 Messages.text("z", String.valueOf(e.z())), Messages.text("world", e.world()),
                 Messages.comp("tooltip", m.get("lookup.pos-hover", Messages.text("world", e.world()))));
@@ -51,7 +58,14 @@ final class LookupRenderer {
                 Messages.comp("user", user), Messages.comp("action", action), Messages.comp("pos", pos));
     }
 
-    private static Component detail(Messages m, BlockEntry e) {
+    private static Component detail(Messages m, LogEntry entry) {
+        if (entry instanceof ContainerEntry c) {
+            return m.get("lookup.row-verbose-container", Messages.text("id", String.valueOf(c.id())),
+                    Messages.text("time", TIME.format(Instant.ofEpochSecond(c.time()))),
+                    Messages.text("holder", c.holderMaterial()), Messages.text("item", c.material()),
+                    Messages.text("data", c.hasData() ? "yes" : "no"));
+        }
+        BlockEntry e = (BlockEntry) entry;
         return m.get("lookup.row-verbose", Messages.text("id", String.valueOf(e.id())),
                 Messages.text("time", TIME.format(Instant.ofEpochSecond(e.time()))),
                 Messages.text("old_state", state(e.oldMaterial(), e.oldData())),

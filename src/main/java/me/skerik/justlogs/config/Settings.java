@@ -17,10 +17,12 @@ import org.bukkit.configuration.file.FileConfiguration;
  */
 public record Settings(
         String locale, boolean updateCheck, boolean metrics, List<String> aliases, String serverName,
-        Logging logging, Queue queue, Lookup lookup, Storage storage) {
+        Logging logging, Queue queue, Lookup lookup, Rollback rollback, Storage storage) {
 
     /** Which loggers are on. {@code worldsBlacklist} holds exact world names. */
-    public record Logging(boolean blockPlace, boolean blockBreak, boolean buckets, Set<String> worldsBlacklist) {
+    public record Logging(boolean blockPlace, boolean blockBreak, boolean buckets, boolean fire, boolean explosions,
+                          boolean growth, boolean leafDecay, boolean entityChanges, boolean containers,
+                          Set<String> worldsBlacklist) {
 
         public boolean worldLogged(String world) {
             return !worldsBlacklist.contains(world);
@@ -32,6 +34,10 @@ public record Settings(
 
     public record Lookup(int pageSize, int maxRadius, int defaultRadius, long defaultTimeSeconds, int countCap,
                          int resultTtlSeconds) {
+    }
+
+    /** {@code maxRows}: most log rows one rollback may load; above {@code confirmAbove} blocks it asks for /jo confirm. */
+    public record Rollback(int maxRows, int confirmAbove, int confirmExpireSeconds, int msPerTick, int previewMaxBlocks) {
     }
 
     public record Storage(String type, String sqliteFile, int sqlitePool, String host, int port, String database,
@@ -53,7 +59,11 @@ public record Settings(
                 c.getStringList("command.aliases").stream().map(String::strip).filter(a -> !a.isEmpty()).toList(),
                 c.getString("server-name", "").strip(),
                 new Logging(c.getBoolean("logging.block-place", true), c.getBoolean("logging.block-break", true),
-                        c.getBoolean("logging.buckets", true), new HashSet<>(c.getStringList("logging.worlds-blacklist"))),
+                        c.getBoolean("logging.buckets", true), c.getBoolean("logging.fire", true),
+                        c.getBoolean("logging.explosions", true), c.getBoolean("logging.growth", true),
+                        c.getBoolean("logging.leaf-decay", false), c.getBoolean("logging.entity-changes", true),
+                        c.getBoolean("logging.containers", true),
+                        new HashSet<>(c.getStringList("logging.worlds-blacklist"))),
                 new Queue(bounded(c, "queue.flush-interval-ms", 50, 10_000, 250, log),
                         bounded(c, "queue.batch-size", 100, 50_000, 2000, log),
                         bounded(c, "queue.max-size", 10_000, 10_000_000, 500_000, log),
@@ -64,6 +74,11 @@ public record Settings(
                         duration(c, "lookup.default-time", "3d", log),
                         bounded(c, "lookup.count-cap", 100, 10_000_000, 100_000, log),
                         bounded(c, "lookup.result-ttl-seconds", 30, 3600, 300, log)),
+                new Rollback(bounded(c, "rollback.max-rows", 1000, 10_000_000, 500_000, log),
+                        bounded(c, "rollback.confirm-above", 0, 10_000_000, 10_000, log),
+                        bounded(c, "rollback.confirm-expire-seconds", 10, 600, 60, log),
+                        bounded(c, "rollback.ms-per-tick", 1, 40, 8, log),
+                        bounded(c, "rollback.preview-max-blocks", 100, 1_000_000, 50_000, log)),
                 storage(c, log));
     }
 

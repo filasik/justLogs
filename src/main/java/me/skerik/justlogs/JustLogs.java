@@ -13,6 +13,9 @@ import me.skerik.justlogs.config.ConfigUpdater;
 import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.config.Settings;
 import me.skerik.justlogs.inspect.InspectListener;
+import me.skerik.justlogs.listener.CauseTracker;
+import me.skerik.justlogs.listener.ContainerListener;
+import me.skerik.justlogs.listener.NatureListener;
 import me.skerik.justlogs.listener.PlayerBlockListener;
 import me.skerik.justlogs.queue.BatchWriter;
 import me.skerik.justlogs.queue.LogQueue;
@@ -116,8 +119,13 @@ public final class JustLogs extends JavaPlugin implements Listener {
         context = ctx;
 
         getServer().getPluginManager().registerEvents(new PlayerBlockListener(ctx), this);
+        CauseTracker causes = new CauseTracker();
+        getServer().getPluginManager().registerEvents(new ContainerListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new NatureListener(ctx, causes), this);
+        timers.add(scheduler.runAsyncTimer(causes::expire, 20L * 30, 20L * 30));
         getServer().getPluginManager().registerEvents(new InspectListener(ctx), this);
 
+        timers.add(scheduler.runAsyncTimer(ctx.rollback::expire, 20L * 10, 20L * 10));
         timers.add(scheduler.runAsyncTimer(() -> ctx.results.expire(ctx.settings().lookup().resultTtlSeconds() * 1000L),
                 20L * 60, 20L * 60));
         if (settings.updateCheck()) {
@@ -130,7 +138,8 @@ public final class JustLogs extends JavaPlugin implements Listener {
 
         Map<String, String> details = new LinkedHashMap<>();
         details.put("Storage", (settings.storage().type().equals("sqlite") ? "SQLite" : "MariaDB") + " (schema v" + schemaVersion + ")");
-        details.put("Logging", "blocks" + (settings.logging().buckets() ? ", buckets" : ""));
+        details.put("Logging", "blocks" + (settings.logging().buckets() ? ", buckets" : "") + (settings.logging().fire() ? ", fire" : "")
+                + (settings.logging().explosions() ? ", explosions" : "") + (settings.logging().growth() ? ", growth" : "") + (settings.logging().containers() ? ", containers" : ""));
         details.put("Language", settings.locale() + "   Updates " + (settings.updateCheck() ? "on" : "off"));
         Banner.print(getComponentLogger(), getPluginMeta().getVersion(), getServer().getMinecraftVersion(), details,
                 (System.nanoTime() - enableStarted) / 1_000_000);

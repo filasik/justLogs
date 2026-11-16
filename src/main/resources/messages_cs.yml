@@ -21,6 +21,10 @@ help:
   page: '  <gold>/jo page <white><n></white></gold> <gray>- jiná stránka posledního výsledku'
   status: '  <gold>/jo status</gold> <gray>- stav fronty, databáze a zápisu'
   reload: '  <gold>/jo reload</gold> <gray>- znovu načte config.yml a zprávy'
+  rollback: '  <gold>/jo rollback <white><parameters></white></gold> <gray>- vrátí bloky (chce <white>t:</white> a <white>u:</white> nebo <white>r:</white>), <white>#preview</white> to nejdřív ukáže'
+  restore: '  <gold>/jo restore <white><parameters></white></gold> <gray>- znovu použije vrácené změny'
+  undo: '  <gold>/jo undo</gold> <gray>- vrátí zpět tvůj poslední rollback nebo restore'
+  confirm: '  <gold>/jo confirm</gold> <gray>- spustí čekající rollback; <white>/jo cancel</white> ho zahodí'
   params-header: '<prefix> <gray>Parametry (v libovolném pořadí, víc hodnot odděl čárkou):'
   params:
     - '  <gold>u:</gold><white>Notch</white> <gray>hráč; <white>u:!Notch</white> všichni ostatní; <white>u:#tnt</white> nehráčský zdroj'
@@ -43,6 +47,7 @@ lookup:
   none-spot: '<prefix> <yellow>Na místě <white><x>, <y>, <z></white> nejsou žádné záznamy.'
   count: '<prefix> <gray><white><count></white> odpovídajících záznamů pro <white><query></white>.'
   row: '<gray>před <ago> <dark_gray>· <user> <dark_gray>· <action> <dark_gray>· <pos>'
+  row-verbose-container: '<dark_gray>  #<id> <time> <holder> <item> (data itemu: <data>)'
   row-verbose: '<dark_gray>  #<id> <time> <old_state> -> <new_state>'
   pos: '<click:run_command:''/justlogs tp <world> <x> <y> <z>''><hover:show_text:''<tooltip>''><aqua>(<x>, <y>, <z>)</aqua></hover></click>'
   pos-hover: '<gray>Teleport do <white><world></white>'
@@ -75,6 +80,8 @@ action:
   bucket-empty: '<green>vylil</green> <white><new></white>'
   bucket-fill: '<red>nabral</red> <white><old></white>'
   dispense: '<green>vystřelil</green> <white><new></white>'
+  deposit: '<green>vložil</green> <white><amount>x <item><data></white> <gray>do <holder>'
+  withdraw: '<red>vzal</red> <white><amount>x <item><data></white> <gray>z <holder>'
   worldedit: '<light_purple>upravil</light_purple> <white><new></white>'
 
 status:
@@ -83,6 +90,9 @@ status:
   queue: '  <gray>Fronta: <white><size></white> čeká (limit <white><limit></white>), <white><dropped></white> zahozeno'
   writer: '  <gray>Zápis: <white><rate></white> řádků/s, poslední zápis <white><ms></white> ms, <white><written></white> řádků od startu'
   writer-error: '  <red>Problém se zápisem: <white><error></white>'
+  rollback: '  <gray>Rollback: <white><state></white>, čeká na potvrzení: <white><pending></white>'
+  state-busy: 'běží'
+  state-idle: 'nečinný'
   inspecting: '  <gray>Hráčů v inspektoru: <white><count></white>'
 
 query:
@@ -101,6 +111,8 @@ query:
     need-position: '<prefix> <red>Dotaz potřebuje pozici. Použij <white>at:x,y,z</white> a <white>w:svět</white>, nebo <white>r:#global</white>.'
     need-world: '<prefix> <red>Dotaz potřebuje svět. Použij <white>w:svět</white>.'
     need-scope: '<prefix> <red>Řekni, co hledat: <white>u:</white>, <white>r:</white>, <white>b:</white> nebo <white>w:</white>.'
+    rollback-scope: '<prefix> <red>Rollback a restore potřebují čas a rozsah: <white>t:</white> a k tomu <white>u:</white> nebo <white>r:</white>, např. <white>/jo rollback u:Notch t:1h r:20</white>.'
+    no-container: '<prefix> <red>Nesmíš prohlížet obsah kontejnerů.'
     radius-too-large: '<prefix> <red>Největší radius, který smíš použít, je <white><arg></white>.'
     selection-unsupported: '<prefix> <red>Výběr z WorldEditu zatím není podporován.'
     no-global: '<prefix> <red>Nesmíš prohledávat celý server. Použij menší radius.'
@@ -111,3 +123,26 @@ tp:
 
 update:
   available: '<prefix> <yellow>Je dostupná nová verze: <white><version></white> <click:open_url:''<url>''><aqua>[stáhnout]</aqua></click>'
+
+rollback:
+  word-rollback: 'vrátit'
+  word-restore: 'obnovit'
+  unit-blocks: 'bloků'
+  unit-items: 'přesunů itemů'
+  preview-blocks-only: '<prefix> <red>Náhled funguje jen pro bloky, ne pro itemy v kontejnerech.'
+  planning: '<prefix> <gray>Počítám změny...'
+  busy: '<prefix> <red>Běží jiný rollback. Počkej, až skončí.'
+  nothing: '<prefix> <yellow>Pro <white><query></white> není co měnit.'
+  too-many: '<prefix> <red>Odpovídá víc než <white><max></white> záznamů. Zúži to pomocí <white>u:</white>, <white>r:</white> nebo <white>t:</white>.'
+  confirm: '<prefix> <gray>Tohle <mode> <white><blocks></white> <unit> v <white><chunks></white> chuncích (<white><query></white>). <click:run_command:/jo confirm><green>[/jo confirm]</green></click> <click:run_command:/jo cancel><red>[/jo cancel]</red></click> <dark_gray>(<seconds> s)'
+  preview: '<prefix> <gray>Náhled: jen ty vidíš <white><blocks></white> <unit>, které by se změnily (<white><query></white>). <click:run_command:/jo confirm><green>[/jo confirm]</green></click> <click:run_command:/jo cancel><red>[/jo cancel]</red></click> <dark_gray>(<seconds> s)'
+  preview-players-only: '<prefix> <red>Náhled se ukazuje ve hře, konzole <white>#preview</white> použít nemůže.'
+  preview-too-large: '<prefix> <red>Na náhled je to moc bloků (limit <white><max></white>). Spusť to bez <white>#preview</white>.'
+  started: '<prefix> <gray>Měním <white><blocks></white> <unit> v <white><chunks></white> chuncích...'
+  done: '<prefix> <green>Hotovo. Změněno <white><blocks></white> <unit> v <white><chunks></white> chuncích (<ms> ms). <gray>Vrátíš to příkazem <white>/jo undo</white>.'
+  done-skipped: '<prefix> <green>Hotovo. Změněno <white><blocks></white> <unit> v <white><chunks></white> chuncích (<ms> ms), <yellow><skipped></yellow> přeskočeno (neznámý blok nebo svět). <gray>Vrátíš to příkazem <white>/jo undo</white>.'
+  failed: '<prefix> <red>Rollback selhal, viz konzole. Část bloků mohla být změněna.'
+  none-pending: '<prefix> <red>Nic nečeká na potvrzení.'
+  expired: '<prefix> <red>Potvrzení vypršelo. Spusť příkaz znovu.'
+  cancelled: '<prefix> <gray>Zrušeno, nic se nezměnilo.'
+  undo-none: '<prefix> <red>Nemáš co vrátit zpět.'

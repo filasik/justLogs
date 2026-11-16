@@ -26,8 +26,20 @@ permissions:
   justlogs.lookup:
     description: Search the log (/jo lookup, /jo near, /jo page)
     default: op
+  justlogs.lookup.container:
+    description: Look up what was put into and taken out of containers
+    default: op
   justlogs.lookup.global:
     description: Search the whole server and use a radius above lookup.max-radius
+    default: op
+  justlogs.rollback:
+    description: Put blocks back (/jo rollback, /jo undo, /jo confirm)
+    default: op
+  justlogs.restore:
+    description: Apply rolled-back changes again (/jo restore)
+    default: op
+  justlogs.rollback.global:
+    description: Roll back or restore without a radius (whole world or server)
     default: op
   justlogs.teleport:
     description: Click a coordinate in a result to teleport there
@@ -48,6 +60,7 @@ permissions:
       justlogs.use: true
       justlogs.inspect: true
       justlogs.lookup: true
+      justlogs.lookup.container: true
       justlogs.teleport: true
   justlogs.admin:
     description: Everything
@@ -55,6 +68,9 @@ permissions:
     children:
       justlogs.helper: true
       justlogs.lookup.global: true
+      justlogs.rollback: true
+      justlogs.restore: true
+      justlogs.rollback.global: true
       justlogs.status: true
       justlogs.reload: true
       justlogs.notify: true
