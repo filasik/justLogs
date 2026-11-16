@@ -34,19 +34,19 @@ class ConfigUpdaterTest {
         YamlConfiguration user = new YamlConfiguration();
         user.loadFromString(OLD);
         YamlConfiguration defaults = bundled();
-        assertFalse(user.contains("welcome.enabled", true));
+        assertFalse(user.contains("queue.batch-size", true));
 
         int added = ConfigUpdater.merge(user, defaults);
 
         assertTrue(added > 0);
         assertEquals("cs", user.getString("locale"));
         assertFalse(user.getBoolean("update-check"));
-        assertTrue(user.contains("welcome.enabled", true));
+        assertTrue(user.contains("queue.batch-size", true));
         assertEquals(defaults.getInt(ConfigUpdater.VERSION_KEY), user.getInt(ConfigUpdater.VERSION_KEY));
 
         String out = user.saveToString();
         assertTrue(out.contains("# my own note"), out);
-        assertTrue(out.contains("Example feature"), out); // the comment of a new key came along
+        assertTrue(out.contains("written in batches"), out); // the comment of a new key came along
 
         // a second pass changes nothing
         YamlConfiguration again = new YamlConfiguration();

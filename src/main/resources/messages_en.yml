@@ -7,13 +7,107 @@ error:
   players-only: '<prefix> <red>This command can only be used by players.'
   no-permission: '<prefix> <red>You do not have permission to do that.'
   generic: '<prefix> <red>Something went wrong. Please try again or tell an admin.'
+  shutting-down: '<prefix> <red>JustLogs is shutting down.'
 
 command:
-  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs reload</white> reloads the configuration.'
-  reloaded: '<prefix> <green>Configuration and messages reloaded. Storage settings and aliases need a restart.'
+  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs help</white> lists the commands.'
+  reloaded: '<prefix> <green>Configuration and messages reloaded. Storage settings, queue sizes and aliases need a restart.'
 
-join:
-  welcome: '<prefix> <gray>Welcome, <white><player></white>!'
+help:
+  header: '<prefix> <gray>Commands:'
+  inspect: '  <gold>/jo inspect</gold> <gray>- toggle inspector mode: left click a block for its history, right click the neighbouring spot'
+  lookup: '  <gold>/jo lookup <white><parameters></white></gold> <gray>- search the log, <white>/jo help params</white> explains the parameters'
+  near: '  <gold>/jo near</gold> <white>[radius]</white> <gray>- changes around you in the last days'
+  page: '  <gold>/jo page <white><n></white></gold> <gray>- another page of the last result'
+  status: '  <gold>/jo status</gold> <gray>- queue, database and writer state'
+  reload: '  <gold>/jo reload</gold> <gray>- reload config.yml and messages'
+  params-header: '<prefix> <gray>Parameters (any order, several values separated by commas):'
+  params:
+    - '  <gold>u:</gold><white>Notch</white> <gray>player; <white>u:!Notch</white> everybody else; <white>u:#tnt</white> a non-player source'
+    - '  <gold>t:</gold><white>2d</white> <gray>time back from now; <white>t:2d-1d</white> a range; units s m h d w'
+    - '  <gold>r:</gold><white>10</white> <gray>radius around you; <white>r:#world</white>, <white>r:#chunk</white>, <white>r:#global</white>'
+    - '  <gold>a:</gold><white>-block</white> <gray>action: <white>block</white>, <white>+block</white> (added), <white>-block</white> (removed), or one like <white>break</white>'
+    - '  <gold>b:</gold><white>diamond_ore</white> <gray>block or item; <white>b:!stone</white> everything else; <white>b:#tag</white>'
+    - '  <gold>w:</gold><white>world</white> <gray>world;  <gold>at:</gold><white>x,y,z</white> <gray>centre of the radius (console, web)'
+    - '  <gold>#verbose</gold> <gray>more detail per row; <gold>#count</gold> <gray>only the number of matches'
+
+inspect:
+  enabled: '<prefix> <green>Inspector on. <gray>Left click a block for its history, right click for the spot next to it. <white>/jo inspect</white> turns it off.'
+  disabled: '<prefix> <gray>Inspector off.'
+
+lookup:
+  searching: '<prefix> <gray>Searching...'
+  header: '<prefix> <gray>Results for <white><query></white>'
+  header-spot: '<prefix> <gray>History of <white><x>, <y>, <z></white> <dark_gray>(<world>)'
+  none: '<prefix> <yellow>No records found for <white><query></white>.'
+  none-spot: '<prefix> <yellow>No records at <white><x>, <y>, <z></white>.'
+  count: '<prefix> <gray><white><count></white> matching records for <white><query></white>.'
+  row: '<gray><ago> ago <dark_gray>· <user> <dark_gray>· <action> <dark_gray>· <pos>'
+  row-verbose: '<dark_gray>  #<id> <time> <old_state> -> <new_state>'
+  pos: '<click:run_command:''/justlogs tp <world> <x> <y> <z>''><hover:show_text:''<tooltip>''><aqua>(<x>, <y>, <z>)</aqua></hover></click>'
+  pos-hover: '<gray>Teleport to <white><world></white>'
+  user: '<click:suggest_command:''/justlogs lookup u:<name> ''><hover:show_text:''<tooltip>''><white><name></white></hover></click>'
+  user-hover: '<gray>Search everything by <white><name></white>'
+  footer: '<prev> <gray>page <white><page></white>/<white><pages></white> <next>'
+  prev: '<click:run_command:''/justlogs page <page>''><hover:show_text:''<gray>Previous page''><aqua>◀</aqua></hover></click>'
+  next: '<click:run_command:''/justlogs page <page>''><hover:show_text:''<gray>Next page''><aqua>▶</aqua></hover></click>'
+  prev-disabled: '<dark_gray>◀'
+  next-disabled: '<dark_gray>▶'
+  page-expired: '<prefix> <yellow>Nothing to page through. Run <white>/jo lookup</white> first.'
+  page-unknown: '<prefix> <yellow>Page <white><page></white> is not reachable yet. Go through the pages one by one.'
+  page-range: '<prefix> <yellow>This result has <white><pages></white> pages.'
+
+action:
+  break: '<red>broke</red> <white><old></white>'
+  place: '<green>placed</green> <white><new></white>'
+  burn: '<gold>burned</gold> <white><old></white>'
+  ignite: '<gold>ignited</gold> <white><old></white>'
+  explode: '<red>blew up</red> <white><old></white>'
+  flow: '<aqua>flowed over</aqua> <white><old></white>'
+  fall: '<yellow>moved</yellow> <white><new></white>'
+  grow: '<green>grew</green> <white><new></white>'
+  form: '<green>formed</green> <white><new></white>'
+  fade: '<gray>faded</gray> <white><old></white>'
+  spread: '<green>spread</green> <white><new></white>'
+  decay: '<gray>decayed</gray> <white><old></white>'
+  piston: '<yellow>pushed</yellow> <white><new></white>'
+  entity-change: '<yellow>changed</yellow> <white><old></white>'
+  bucket-empty: '<green>poured</green> <white><new></white>'
+  bucket-fill: '<red>scooped up</red> <white><old></white>'
+  dispense: '<green>dispensed</green> <white><new></white>'
+  worldedit: '<light_purple>edited</light_purple> <white><new></white>'
+
+status:
+  header: '<prefix> <gray>JustLogs <white>v<version></white>'
+  database: '  <gray>Database: <white><type></white>, schema v<white><schema></white>'
+  queue: '  <gray>Queue: <white><size></white> waiting (limit <white><limit></white>), <white><dropped></white> dropped'
+  writer: '  <gray>Writer: <white><rate></white> rows/s, last flush <white><ms></white> ms, <white><written></white> rows written since start'
+  writer-error: '  <red>Writer problem: <white><error></white>'
+  inspecting: '  <gray>Inspecting players: <white><count></white>'
+
+query:
+  error:
+    unknown-param: '<prefix> <red>Unknown parameter <white><arg></white>. See <white>/jo help params</white>.'
+    unknown-flag: '<prefix> <red>Unknown flag <white><arg></white>.'
+    missing-value: '<prefix> <red>Parameter <white><arg></white> needs a value.'
+    bad-user: '<prefix> <red>Not a valid player name: <white><arg></white>'
+    bad-time: '<prefix> <red>Not a valid time: <white><arg></white>. Try <white>30m</white>, <white>12h</white>, <white>3d</white> or <white>2d-1d</white>.'
+    bad-radius: '<prefix> <red>Not a valid radius: <white><arg></white>. Use a number, <white>#world</white>, <white>#chunk</white> or <white>#global</white>.'
+    unknown-action: '<prefix> <red>Unknown action: <white><arg></white>'
+    bad-material: '<prefix> <red>Not a valid block or item: <white><arg></white>'
+    unknown-tag: '<prefix> <red>Unknown tag: <white><arg></white>'
+    bad-world: '<prefix> <red>Not a valid world name: <white><arg></white>'
+    bad-position: '<prefix> <red>Not a valid position: <white><arg></white>. Use <white>at:x,y,z</white>.'
+    need-position: '<prefix> <red>This query needs a position. Use <white>at:x,y,z</white> and <white>w:world</white>, or <white>r:#global</white>.'
+    need-world: '<prefix> <red>This query needs a world. Use <white>w:world</white>.'
+    need-scope: '<prefix> <red>Say what to search: <white>u:</white>, <white>r:</white>, <white>b:</white> or <white>w:</white>.'
+    radius-too-large: '<prefix> <red>The largest radius you may use is <white><arg></white>.'
+    selection-unsupported: '<prefix> <red>WorldEdit selections are not supported yet.'
+    no-global: '<prefix> <red>You may not search the whole server. Use a smaller radius.'
+
+tp:
+  failed: '<prefix> <red>Cannot teleport there: world <white><world></white> is not loaded.'
+  done: '<prefix> <gray>Teleported to <white><x>, <y>, <z></white>.'
 
 update:
   available: '<prefix> <yellow>A new version is available: <white><version></white> <click:open_url:''<url>''><aqua>[download]</aqua></click>'

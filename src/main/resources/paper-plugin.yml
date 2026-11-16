@@ -18,8 +18,43 @@ folia-supported: true
 #       join-classpath: true
 permissions:
   justlogs.use:
-    description: Use the base command
-    default: true
-  justlogs.admin:
-    description: Reload the configuration, update notifications
+    description: Base command and help
     default: op
+  justlogs.inspect:
+    description: Inspector mode (click a block to see its history)
+    default: op
+  justlogs.lookup:
+    description: Search the log (/jo lookup, /jo near, /jo page)
+    default: op
+  justlogs.lookup.global:
+    description: Search the whole server and use a radius above lookup.max-radius
+    default: op
+  justlogs.teleport:
+    description: Click a coordinate in a result to teleport there
+    default: op
+  justlogs.status:
+    description: /jo status
+    default: op
+  justlogs.reload:
+    description: /jo reload
+    default: op
+  justlogs.notify:
+    description: Told about new plugin versions
+    default: op
+  justlogs.helper:
+    description: Package for helpers - look things up, never change anything
+    default: false
+    children:
+      justlogs.use: true
+      justlogs.inspect: true
+      justlogs.lookup: true
+      justlogs.teleport: true
+  justlogs.admin:
+    description: Everything
+    default: op
+    children:
+      justlogs.helper: true
+      justlogs.lookup.global: true
+      justlogs.status: true
+      justlogs.reload: true
+      justlogs.notify: true

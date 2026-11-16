@@ -3,6 +3,7 @@ package me.skerik.justlogs;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 import org.jspecify.annotations.Nullable;
@@ -28,6 +29,12 @@ public final class PaperScheduler implements Scheduler {
     public void runForEntity(Entity entity, Runnable task, @Nullable Runnable retired) {
         if (!plugin.isEnabled()) return;
         entity.getScheduler().run(plugin, t -> task.run(), retired);
+    }
+
+    @Override
+    public void runAtRegion(World world, int chunkX, int chunkZ, Runnable task) {
+        if (!plugin.isEnabled()) return;
+        Bukkit.getRegionScheduler().run(plugin, world, chunkX, chunkZ, t -> task.run());
     }
 
     @Override

@@ -1,19 +1,113 @@
 # Zprávy JustLogs (MiniMessage). Chybějící klíče se doplní z vestavěné angličtiny.
-# Zástupné znaky v <lomených závorkách> plugin vyplní; nech je tam.
+# Zástupné znaky v <ostrých závorkách> doplňuje plugin; ponech je.
 prefix: '<dark_gray>[<gold>JustLogs<dark_gray>]<reset>'
 
 error:
-  not-ready: '<prefix> <red>JustLogs se ještě spouští. Zkus to za chvíli.'
+  not-ready: '<prefix> <red>JustLogs se ještě spouští. Zkus to za chvilku.'
   players-only: '<prefix> <red>Tento příkaz mohou použít jen hráči.'
-  no-permission: '<prefix> <red>K tomu nemáš oprávnění.'
-  generic: '<prefix> <red>Něco se pokazilo. Zkus to znovu nebo napiš adminovi.'
+  no-permission: '<prefix> <red>Na tohle nemáš oprávnění.'
+  generic: '<prefix> <red>Něco se pokazilo. Zkus to znovu nebo to řekni adminovi.'
+  shutting-down: '<prefix> <red>JustLogs se vypíná.'
 
 command:
-  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs reload</white> znovu načte konfiguraci.'
-  reloaded: '<prefix> <green>Konfigurace a zprávy znovu načteny. Nastavení úložiště a aliasy vyžadují restart.'
+  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs help</white> vypíše příkazy.'
+  reloaded: '<prefix> <green>Konfigurace a zprávy načteny znovu. Nastavení úložiště, velikosti fronty a aliasy vyžadují restart.'
 
-join:
-  welcome: '<prefix> <gray>Vítej, <white><player></white>!'
+help:
+  header: '<prefix> <gray>Příkazy:'
+  inspect: '  <gold>/jo inspect</gold> <gray>- přepne inspektor: levý klik na blok = jeho historie, pravý klik = místo vedle něj'
+  lookup: '  <gold>/jo lookup <white><parametry></white></gold> <gray>- hledání v logu, <white>/jo help params</white> vysvětlí parametry'
+  near: '  <gold>/jo near</gold> <white>[radius]</white> <gray>- změny kolem tebe za poslední dny'
+  page: '  <gold>/jo page <white><n></white></gold> <gray>- jiná stránka posledního výsledku'
+  status: '  <gold>/jo status</gold> <gray>- stav fronty, databáze a zápisu'
+  reload: '  <gold>/jo reload</gold> <gray>- znovu načte config.yml a zprávy'
+  params-header: '<prefix> <gray>Parametry (v libovolném pořadí, víc hodnot odděl čárkou):'
+  params:
+    - '  <gold>u:</gold><white>Notch</white> <gray>hráč; <white>u:!Notch</white> všichni ostatní; <white>u:#tnt</white> nehráčský zdroj'
+    - '  <gold>t:</gold><white>2d</white> <gray>čas zpět od teď; <white>t:2d-1d</white> rozsah; jednotky s m h d w'
+    - '  <gold>r:</gold><white>10</white> <gray>okruh kolem tebe; <white>r:#world</white>, <white>r:#chunk</white>, <white>r:#global</white>'
+    - '  <gold>a:</gold><white>-block</white> <gray>akce: <white>block</white>, <white>+block</white> (přibylo), <white>-block</white> (ubylo), nebo konkrétní jako <white>break</white>'
+    - '  <gold>b:</gold><white>diamond_ore</white> <gray>blok nebo item; <white>b:!stone</white> vše ostatní; <white>b:#tag</white>'
+    - '  <gold>w:</gold><white>svět</white> <gray>svět;  <gold>at:</gold><white>x,y,z</white> <gray>střed okruhu (konzole, web)'
+    - '  <gold>#verbose</gold> <gray>víc podrobností na řádek; <gold>#count</gold> <gray>jen počet nálezů'
+
+inspect:
+  enabled: '<prefix> <green>Inspektor zapnut. <gray>Levý klik na blok = jeho historie, pravý klik = místo vedle něj. <white>/jo inspect</white> ho vypne.'
+  disabled: '<prefix> <gray>Inspektor vypnut.'
+
+lookup:
+  searching: '<prefix> <gray>Hledám...'
+  header: '<prefix> <gray>Výsledky pro <white><query></white>'
+  header-spot: '<prefix> <gray>Historie místa <white><x>, <y>, <z></white> <dark_gray>(<world>)'
+  none: '<prefix> <yellow>Nic jsem nenašel pro <white><query></white>.'
+  none-spot: '<prefix> <yellow>Na místě <white><x>, <y>, <z></white> nejsou žádné záznamy.'
+  count: '<prefix> <gray><white><count></white> odpovídajících záznamů pro <white><query></white>.'
+  row: '<gray>před <ago> <dark_gray>· <user> <dark_gray>· <action> <dark_gray>· <pos>'
+  row-verbose: '<dark_gray>  #<id> <time> <old_state> -> <new_state>'
+  pos: '<click:run_command:''/justlogs tp <world> <x> <y> <z>''><hover:show_text:''<tooltip>''><aqua>(<x>, <y>, <z>)</aqua></hover></click>'
+  pos-hover: '<gray>Teleport do <white><world></white>'
+  user: '<click:suggest_command:''/justlogs lookup u:<name> ''><hover:show_text:''<tooltip>''><white><name></white></hover></click>'
+  user-hover: '<gray>Vyhledat vše od <white><name></white>'
+  footer: '<prev> <gray>strana <white><page></white>/<white><pages></white> <next>'
+  prev: '<click:run_command:''/justlogs page <page>''><hover:show_text:''<gray>Předchozí strana''><aqua>◀</aqua></hover></click>'
+  next: '<click:run_command:''/justlogs page <page>''><hover:show_text:''<gray>Další strana''><aqua>▶</aqua></hover></click>'
+  prev-disabled: '<dark_gray>◀'
+  next-disabled: '<dark_gray>▶'
+  page-expired: '<prefix> <yellow>Není co listovat. Nejdřív spusť <white>/jo lookup</white>.'
+  page-unknown: '<prefix> <yellow>Na stranu <white><page></white> se zatím nedá skočit. Procházej strany postupně.'
+  page-range: '<prefix> <yellow>Tento výsledek má <white><pages></white> stran.'
+
+action:
+  break: '<red>rozbil</red> <white><old></white>'
+  place: '<green>položil</green> <white><new></white>'
+  burn: '<gold>spálil</gold> <white><old></white>'
+  ignite: '<gold>zapálil</gold> <white><old></white>'
+  explode: '<red>vyhodil do vzduchu</red> <white><old></white>'
+  flow: '<aqua>zatopil</aqua> <white><old></white>'
+  fall: '<yellow>přesunul</yellow> <white><new></white>'
+  grow: '<green>vyrostl</green> <white><new></white>'
+  form: '<green>vznikl</green> <white><new></white>'
+  fade: '<gray>zmizel</gray> <white><old></white>'
+  spread: '<green>rozšířil se</green> <white><new></white>'
+  decay: '<gray>zetlel</gray> <white><old></white>'
+  piston: '<yellow>posunul</yellow> <white><new></white>'
+  entity-change: '<yellow>změnil</yellow> <white><old></white>'
+  bucket-empty: '<green>vylil</green> <white><new></white>'
+  bucket-fill: '<red>nabral</red> <white><old></white>'
+  dispense: '<green>vystřelil</green> <white><new></white>'
+  worldedit: '<light_purple>upravil</light_purple> <white><new></white>'
+
+status:
+  header: '<prefix> <gray>JustLogs <white>v<version></white>'
+  database: '  <gray>Databáze: <white><type></white>, schéma v<white><schema></white>'
+  queue: '  <gray>Fronta: <white><size></white> čeká (limit <white><limit></white>), <white><dropped></white> zahozeno'
+  writer: '  <gray>Zápis: <white><rate></white> řádků/s, poslední zápis <white><ms></white> ms, <white><written></white> řádků od startu'
+  writer-error: '  <red>Problém se zápisem: <white><error></white>'
+  inspecting: '  <gray>Hráčů v inspektoru: <white><count></white>'
+
+query:
+  error:
+    unknown-param: '<prefix> <red>Neznámý parametr <white><arg></white>. Viz <white>/jo help params</white>.'
+    unknown-flag: '<prefix> <red>Neznámý příznak <white><arg></white>.'
+    missing-value: '<prefix> <red>Parametr <white><arg></white> potřebuje hodnotu.'
+    bad-user: '<prefix> <red>Neplatné jméno hráče: <white><arg></white>'
+    bad-time: '<prefix> <red>Neplatný čas: <white><arg></white>. Zkus <white>30m</white>, <white>12h</white>, <white>3d</white> nebo <white>2d-1d</white>.'
+    bad-radius: '<prefix> <red>Neplatný radius: <white><arg></white>. Použij číslo, <white>#world</white>, <white>#chunk</white> nebo <white>#global</white>.'
+    unknown-action: '<prefix> <red>Neznámá akce: <white><arg></white>'
+    bad-material: '<prefix> <red>Neplatný blok nebo item: <white><arg></white>'
+    unknown-tag: '<prefix> <red>Neznámý tag: <white><arg></white>'
+    bad-world: '<prefix> <red>Neplatný název světa: <white><arg></white>'
+    bad-position: '<prefix> <red>Neplatná pozice: <white><arg></white>. Použij <white>at:x,y,z</white>.'
+    need-position: '<prefix> <red>Dotaz potřebuje pozici. Použij <white>at:x,y,z</white> a <white>w:svět</white>, nebo <white>r:#global</white>.'
+    need-world: '<prefix> <red>Dotaz potřebuje svět. Použij <white>w:svět</white>.'
+    need-scope: '<prefix> <red>Řekni, co hledat: <white>u:</white>, <white>r:</white>, <white>b:</white> nebo <white>w:</white>.'
+    radius-too-large: '<prefix> <red>Největší radius, který smíš použít, je <white><arg></white>.'
+    selection-unsupported: '<prefix> <red>Výběr z WorldEditu zatím není podporován.'
+    no-global: '<prefix> <red>Nesmíš prohledávat celý server. Použij menší radius.'
+
+tp:
+  failed: '<prefix> <red>Tam se teleportovat nedá: svět <white><world></white> není načtený.'
+  done: '<prefix> <gray>Teleportováno na <white><x>, <y>, <z></white>.'
 
 update:
   available: '<prefix> <yellow>Je dostupná nová verze: <white><version></white> <click:open_url:''<url>''><aqua>[stáhnout]</aqua></click>'

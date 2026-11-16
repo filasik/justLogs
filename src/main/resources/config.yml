@@ -18,16 +18,48 @@ locale: en
 update-check: true
 
 command:
-  # Extra aliases for /justlogs. Restart required. Remove an alias if another plugin already owns it.
-  aliases: []
+  # Short names for /justlogs. Restart required. Remove an alias if another plugin already owns it.
+  aliases: [jo, jlogs]
+
+# Name of this server inside a shared database (several servers can log into one MariaDB).
+# Leave empty on a single server.
+server-name: ""
 
 # Anonymous usage statistics through bStats (server count, Minecraft version, ...).
 # Set to false to switch them off for this plugin. The global switch is plugins/bStats/config.yml.
 metrics: true
 
-# Example feature (replace with the plugin's real options): greet players when they join.
-welcome:
-  enabled: true
+logging:
+  # What gets logged. A disabled logger costs nothing.
+  block-place: true
+  block-break: true
+  # Water and lava buckets
+  buckets: true
+  # Worlds that are never logged (exact names)
+  worlds-blacklist: []
+
+queue:
+  # Log records are collected in memory and written in batches by one background thread.
+  flush-interval-ms: 250
+  batch-size: 2000
+  # When the database cannot keep up, fluid flow and clicks are dropped at this size and everything at twice this size.
+  max-size: 500000
+  # On shutdown the remaining records are written, for at most this long.
+  shutdown-timeout-seconds: 30
+
+lookup:
+  # Rows per page in chat
+  page-size: 8
+  # Largest r: a player without justlogs.lookup.global may use
+  max-radius: 100
+  # Radius used when a player gives no scope at all (no u:, r:, b: or w:)
+  default-radius: 10
+  # Time window used when a query has no t:
+  default-time: 3d
+  # Page counter stops counting at this many rows (shows e.g. 12/1000+)
+  count-cap: 100000
+  # How long /justlogs page keeps the last result of a sender
+  result-ttl-seconds: 300
 
 storage:
   # sqlite  = single file in the plugin folder, zero setup (default)

@@ -1,5 +1,6 @@
 package me.skerik.justlogs;
 
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.jspecify.annotations.Nullable;
 
@@ -11,6 +12,12 @@ public interface Scheduler {
 
     /** Runs on the thread owning the entity. {@code retired} runs instead if the entity is gone. */
     void runForEntity(Entity entity, Runnable task, @Nullable Runnable retired);
+
+    /**
+     * Runs on the thread owning the chunk (Folia: its region). Block, container and entity changes at a location
+     * (rollbacks!) must go through this, never through {@link #runGlobal}.
+     */
+    void runAtRegion(World world, int chunkX, int chunkZ, Runnable task);
 
     void runAsync(Runnable task);
 

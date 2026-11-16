@@ -20,13 +20,16 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class JustLogsLoader implements PluginLoader {
 
+    /** Value of MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR; the constant does not exist in Paper 1.21.1. */
+    private static final String CENTRAL_MIRROR = "https://maven-central.storage-download.googleapis.com/maven2";
+
     @Override
     public void classloader(PluginClasspathBuilder classpathBuilder) {
         List<String> libraries = readLibraries();
         if (libraries.isEmpty()) return;
         MavenLibraryResolver resolver = new MavenLibraryResolver();
         resolver.addRepository(new RemoteRepository.Builder(
-                "central", "default", MavenLibraryResolver.MAVEN_CENTRAL_DEFAULT_MIRROR).build());
+                "central", "default", CENTRAL_MIRROR).build());
         // slf4j-api is provided by the server; a second copy would only cause classloader confusion
         List<Exclusion> excluded = List.of(new Exclusion("org.slf4j", "slf4j-api", "*", "*"));
         for (String coordinates : libraries) {

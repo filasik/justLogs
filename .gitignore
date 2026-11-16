@@ -23,3 +23,9 @@ CLAUDE.md
 .claude/
 docs/DECISIONS.md
 docs/MANUAL_TEST.md
+
+# Local planning notes
+IMPLEMENTATION_PLAN.md
+web-ui/node_modules/
+web-ui/dist/
+src/main/resources/web/

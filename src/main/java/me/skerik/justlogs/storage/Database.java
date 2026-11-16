@@ -3,7 +3,9 @@ package me.skerik.justlogs.storage;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -17,6 +19,10 @@ public final class Database implements AutoCloseable {
     private final DbConfig config;
     private final HikariDataSource dataSource;
     private final ExecutorService executor;
+    private final String jdbcUrl;
+    private final String driverClass;
+    private final String user;
+    private final String password;
 
     public Database(DbConfig config) {
         this.config = config;
@@ -45,6 +51,10 @@ public final class Database implements AutoCloseable {
                 hc.setDriverClassName("org.mariadb.jdbc.Driver");
             }
         }
+        this.jdbcUrl = hc.getJdbcUrl();
+        this.driverClass = hc.getDriverClassName();
+        this.user = hc.getUsername();
+        this.password = hc.getPassword();
         this.dataSource = new HikariDataSource(hc);
         AtomicInteger n = new AtomicInteger();
         this.executor = Executors.newFixedThreadPool(hc.getMaximumPoolSize(), r -> {
@@ -73,6 +83,27 @@ public final class Database implements AutoCloseable {
     public <T> T call(SqlFunction<Connection, T> work) throws SQLException {
         try (Connection c = dataSource.getConnection()) {
             return work.apply(c);
+        }
+    }
+
+    /**
+     * A connection that is not part of the pool, owned by the caller (the batch writer keeps one for its whole life,
+     * so SQLite never sees two writers from this plugin). Not available for the private in-memory test database.
+     */
+    public Connection openDedicated() throws SQLException {
+        if (config.sqliteFile() == null && config.dialect() == DbConfig.Dialect.SQLITE) {
+            throw new SQLException("A dedicated connection needs a database file (in-memory databases are private)");
+        }
+        try {
+            Driver driver = (Driver) Class.forName(driverClass).getDeclaredConstructor().newInstance();
+            Properties props = new Properties();
+            if (user != null) props.setProperty("user", user);
+            if (password != null) props.setProperty("password", password);
+            Connection c = driver.connect(jdbcUrl, props);
+            if (c == null) throw new SQLException("Driver " + driverClass + " rejected " + jdbcUrl);
+            return c;
+        } catch (ReflectiveOperationException e) {
+            throw new SQLException("Cannot load JDBC driver " + driverClass, e);
         }
     }
 

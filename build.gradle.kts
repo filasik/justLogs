@@ -23,6 +23,8 @@ dependencies {
     testImplementation("io.papermc.paper:paper-api:${property("paperApiVersion")}")
     testImplementation("org.xerial:sqlite-jdbc:${property("sqliteVersion")}")
     testImplementation("com.zaxxer:HikariCP:${property("hikariVersion")}")
+    // Only used by the optional MariaDB/MySQL integration test (JL_TEST_MARIADB), see MariaDbIntegrationTest
+    testRuntimeOnly("org.mariadb.jdbc:mariadb-java-client:${property("mariadbVersion")}")
     testImplementation("org.slf4j:slf4j-simple:2.0.17")
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -35,7 +37,7 @@ java {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
-    options.release = 25
+    options.release = 21
     // Warnings are errors: no deprecated API without an explicit, commented suppression
     options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
 }

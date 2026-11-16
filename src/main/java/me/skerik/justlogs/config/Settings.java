@@ -1,10 +1,13 @@
 package me.skerik.justlogs.config;
 
+import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Logger;
 import me.skerik.justlogs.storage.DbConfig;
-import java.nio.file.Path;
+import me.skerik.justlogs.util.Durations;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -13,9 +16,23 @@ import org.bukkit.configuration.file.FileConfiguration;
  * an invalid value falls back to the default and is logged (the plugin never refuses to start over a typo).
  */
 public record Settings(
-        String locale, boolean updateCheck, boolean metrics, List<String> aliases, boolean welcome
-        , Storage storage
-) {
+        String locale, boolean updateCheck, boolean metrics, List<String> aliases, String serverName,
+        Logging logging, Queue queue, Lookup lookup, Storage storage) {
+
+    /** Which loggers are on. {@code worldsBlacklist} holds exact world names. */
+    public record Logging(boolean blockPlace, boolean blockBreak, boolean buckets, Set<String> worldsBlacklist) {
+
+        public boolean worldLogged(String world) {
+            return !worldsBlacklist.contains(world);
+        }
+    }
+
+    public record Queue(int flushIntervalMs, int batchSize, int maxSize, int shutdownTimeoutSeconds) {
+    }
+
+    public record Lookup(int pageSize, int maxRadius, int defaultRadius, long defaultTimeSeconds, int countCap,
+                         int resultTtlSeconds) {
+    }
 
     public record Storage(String type, String sqliteFile, int sqlitePool, String host, int port, String database,
                           String user, String password, int poolSize, String sslMode) {
@@ -34,9 +51,20 @@ public record Settings(
                 c.getBoolean("update-check", true),
                 c.getBoolean("metrics", true),
                 c.getStringList("command.aliases").stream().map(String::strip).filter(a -> !a.isEmpty()).toList(),
-                c.getBoolean("welcome.enabled", true)
-                , storage(c, log)
-        );
+                c.getString("server-name", "").strip(),
+                new Logging(c.getBoolean("logging.block-place", true), c.getBoolean("logging.block-break", true),
+                        c.getBoolean("logging.buckets", true), new HashSet<>(c.getStringList("logging.worlds-blacklist"))),
+                new Queue(bounded(c, "queue.flush-interval-ms", 50, 10_000, 250, log),
+                        bounded(c, "queue.batch-size", 100, 50_000, 2000, log),
+                        bounded(c, "queue.max-size", 10_000, 10_000_000, 500_000, log),
+                        bounded(c, "queue.shutdown-timeout-seconds", 1, 600, 30, log)),
+                new Lookup(bounded(c, "lookup.page-size", 1, 50, 8, log),
+                        bounded(c, "lookup.max-radius", 1, 100_000, 100, log),
+                        bounded(c, "lookup.default-radius", 1, 100_000, 10, log),
+                        duration(c, "lookup.default-time", "3d", log),
+                        bounded(c, "lookup.count-cap", 100, 10_000_000, 100_000, log),
+                        bounded(c, "lookup.result-ttl-seconds", 30, 3600, 300, log)),
+                storage(c, log));
     }
 
     private static Storage storage(FileConfiguration c, Logger log) {
@@ -67,5 +95,14 @@ public record Settings(
             return fallback;
         }
         return value;
+    }
+
+    /** A duration like {@code 3d} in seconds; invalid text falls back to the default. */
+    static long duration(FileConfiguration c, String path, String fallback, Logger log) {
+        String text = c.getString(path, fallback);
+        return Durations.parseSeconds(text == null ? fallback : text).orElseGet(() -> {
+            log.warning(path + " must look like 30m, 12h or 3d; using " + fallback);
+            return Durations.parseSeconds(fallback).orElse(259_200);
+        });
     }
 }
