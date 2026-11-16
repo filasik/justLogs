@@ -1,0 +1,25 @@
+name: ${name}
+version: '${version}'
+main: ${main}
+loader: ${loader}
+description: '${description}'
+website: ${website}
+authors: [filasik]
+api-version: '${apiVersion}'
+# Everything goes through the Scheduler abstraction (global / entity / async), so Folia works.
+# Set to false if you add code that touches worlds or other entities from the wrong thread.
+folia-supported: true
+# Soft / hard dependencies (example: an economy through Vault):
+# dependencies:
+#   server:
+#     Vault:
+#       load: BEFORE
+#       required: true
+#       join-classpath: true
+permissions:
+  justlogs.use:
+    description: Use the base command
+    default: true
+  justlogs.admin:
+    description: Reload the configuration, update notifications
+    default: op

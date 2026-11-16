@@ -1,0 +1,52 @@
+# ============================================================================
+#  JustLogs configuration
+#  Reload most values with /justlogs reload. Storage and command aliases need a restart.
+#  Support: https://github.com/filasik/justLogs
+# ============================================================================
+
+# Config format version. Do not change: when you update the plugin, options that are new in the
+# newer version are added to this file automatically (your values stay, a backup is saved first).
+# (Developer: raise this number whenever you add a key, and add the key with its comment here.)
+config-version: 1
+
+# Language of all player-facing messages: en, cs.
+# The files plugins/JustLogs/messages_<locale>.yml are yours to edit; missing keys fall back to the built-in text.
+locale: en
+
+# Check GitHub releases for a newer version (async, once at startup and then every 12 hours).
+# Players with justlogs.admin are told when they join.
+update-check: true
+
+command:
+  # Extra aliases for /justlogs. Restart required. Remove an alias if another plugin already owns it.
+  aliases: []
+
+# Anonymous usage statistics through bStats (server count, Minecraft version, ...).
+# Set to false to switch them off for this plugin. The global switch is plugins/bStats/config.yml.
+metrics: true
+
+# Example feature (replace with the plugin's real options): greet players when they join.
+welcome:
+  enabled: true
+
+storage:
+  # sqlite  = single file in the plugin folder, zero setup (default)
+  # mariadb = MariaDB or MySQL server (use this to share data between servers)
+  type: sqlite
+  sqlite:
+    file: justlogs.db
+    # Concurrent database connections (writes are serialized by SQLite anyway)
+    pool-size: 3
+  mariadb:
+    host: localhost
+    port: 3306
+    database: justlogs
+    user: justlogs
+    password: change-me
+    pool-size: 6
+    # TLS mode of the connection. Leave empty for the driver default.
+    # MySQL 8+ with a self-signed certificate (the default install) fails with
+    # "Cannot use authentication plugin caching_sha2_password with a Self signed certificates":
+    # use "trust" (encrypted, certificate not verified), or "disable" on a trusted local network.
+    # Other values: verify-ca, verify-full (need a proper certificate).
+    ssl-mode: ""

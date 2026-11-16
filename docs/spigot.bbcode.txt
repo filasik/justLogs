@@ -1,0 +1,23 @@
+[CENTER][SIZE=6][B]JustLogs[/B][/SIZE]
+Fast, modern block, container and player logging with rollback and a web dashboard.[/CENTER]
+
+[SIZE=5][B]Features[/B][/SIZE]
+[LIST]
+[*]TODO
+[/LIST]
+
+[SIZE=5][B]Commands & Permissions[/B][/SIZE]
+[LIST]
+[*][B]/command[/B] - description (permission: [ICODE]perm.node[/ICODE])
+[/LIST]
+
+[SIZE=5][B]Configuration[/B][/SIZE]
+[CODE=yaml]# TODO: ukázka z config.yml[/CODE]
+
+[SIZE=5][B]Compatibility[/B][/SIZE]
+Paper / Purpur / Folia, Minecraft 26.3
+
+[SIZE=5][B]Support[/B][/SIZE]
+Issues: https://github.com/filasik/justLogs/issues
+Web: https://github.com/filasik/justLogs
+The plugin is free. Donations are voluntary and give no in-game advantages: [URL='https://www.paypal.com/donate/?hosted_button_id=94D2D46EHKU5S']Donate via PayPal[/URL]

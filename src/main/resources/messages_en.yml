@@ -1,0 +1,19 @@
+# JustLogs messages (MiniMessage). Missing keys fall back to the built-in English text.
+# Placeholders in <angle brackets> are filled in by the plugin; keep them.
+prefix: '<dark_gray>[<gold>JustLogs<dark_gray>]<reset>'
+
+error:
+  not-ready: '<prefix> <red>JustLogs is still starting up. Try again in a moment.'
+  players-only: '<prefix> <red>This command can only be used by players.'
+  no-permission: '<prefix> <red>You do not have permission to do that.'
+  generic: '<prefix> <red>Something went wrong. Please try again or tell an admin.'
+
+command:
+  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs reload</white> reloads the configuration.'
+  reloaded: '<prefix> <green>Configuration and messages reloaded. Storage settings and aliases need a restart.'
+
+join:
+  welcome: '<prefix> <gray>Welcome, <white><player></white>!'
+
+update:
+  available: '<prefix> <yellow>A new version is available: <white><version></white> <click:open_url:''<url>''><aqua>[download]</aqua></click>'

@@ -1,0 +1,19 @@
+# Zprávy JustLogs (MiniMessage). Chybějící klíče se doplní z vestavěné angličtiny.
+# Zástupné znaky v <lomených závorkách> plugin vyplní; nech je tam.
+prefix: '<dark_gray>[<gold>JustLogs<dark_gray>]<reset>'
+
+error:
+  not-ready: '<prefix> <red>JustLogs se ještě spouští. Zkus to za chvíli.'
+  players-only: '<prefix> <red>Tento příkaz mohou použít jen hráči.'
+  no-permission: '<prefix> <red>K tomu nemáš oprávnění.'
+  generic: '<prefix> <red>Něco se pokazilo. Zkus to znovu nebo napiš adminovi.'
+
+command:
+  info: '<prefix> <gray>JustLogs v<version> · <white>/justlogs reload</white> znovu načte konfiguraci.'
+  reloaded: '<prefix> <green>Konfigurace a zprávy znovu načteny. Nastavení úložiště a aliasy vyžadují restart.'
+
+join:
+  welcome: '<prefix> <gray>Vítej, <white><player></white>!'
+
+update:
+  available: '<prefix> <yellow>Je dostupná nová verze: <white><version></white> <click:open_url:''<url>''><aqua>[stáhnout]</aqua></click>'
