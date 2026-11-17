@@ -153,7 +153,7 @@ public final class JustLogs extends JavaPlugin implements Listener {
         if (ctx == null || u == null || u.newerVersion() == null || !player.hasPermission("justlogs.notify")) return;
         scheduler.runForEntity(player, () -> player.sendMessage(ctx.messages().get("update.available",
                 Messages.text("version", String.valueOf(u.newerVersion())),
-                Messages.text("url", String.valueOf(u.url())))), null);
+                Messages.arg("url", String.valueOf(u.url())))), null);
     }
 
     /** /justlogs reload: config.yml values and messages. Storage settings and command aliases need a restart. */

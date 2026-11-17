@@ -110,6 +110,15 @@ public final class Messages {
         return Placeholder.unparsed(name, value);
     }
 
+    /**
+     * Placeholder for values inside a tag argument, e.g. {@code <click:open_url:'<url>'>}: unparsed placeholders are not
+     * substituted there. The value is stripped of characters that could end the argument or open a tag, so use it for
+     * commands, ids and URLs only.
+     */
+    public static TagResolver arg(String name, String value) {
+        return Placeholder.parsed(name, value.replaceAll("[<>'\"\\\\]", ""));
+    }
+
     public static TagResolver comp(String name, Component value) {
         return Placeholder.component(name, value);
     }
