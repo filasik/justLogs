@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 - 2026-11-17
+- Fixed the [download] button in the "new version available" message (the link was shown as raw text).
+
 ## 0.2.0 - 2026-11-16
 - Logs blocks placed and broken by players and water/lava buckets (queued in memory, written in batches by one thread).
 - `/justlogs` (`/jo`, `/jlogs`): `inspect`, `lookup`, `near`, `page`, `tp`, `status`, `reload`, `help` with a free-form
