@@ -1,14 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#312e81"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="300" fill="url(#g)"/>
-  <rect x="60" y="70" width="160" height="160" rx="32" fill="#2dd4bf"/>
-  <text x="140" y="180" font-family="Helvetica, Arial, sans-serif" font-size="100" font-weight="700" text-anchor="middle" fill="#0f172a">J</text>
-  <text x="260" y="150" font-family="Helvetica, Arial, sans-serif" font-size="72" font-weight="700" fill="#ffffff">JustLogs</text>
-  <text x="262" y="205" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#c7d2fe">Fast, modern block, container and player logging with rollback and a web dashboard.</text>
-  <text x="1140" y="270" font-family="Helvetica, Arial, sans-serif" font-size="22" text-anchor="end" fill="#94a3b8">skerik.me</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300" role="img" aria-label="JustLogs — Know who broke it. Roll it back.">
+<title>JustLogs — block history and rollback</title>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#065f46"/></linearGradient><linearGradient id="banner-bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#102f2d"/><stop offset="1" stop-color="#071b20"/></linearGradient></defs>
+<rect width="1200" height="300" fill="url(#banner-bg)"/>
+<g fill="#34d399" opacity="0.045"><path d="M0 0H180V60H240V120H120V180H0ZM1060 0H1200V100H1140V160H1080V80H1020V40H1060ZM680 240H740V300H620V280H680ZM1140 240H1200V300H1080V280H1140Z"/></g>
+<g transform="translate(48 38) scale(.4375)"><rect width="512" height="512" rx="96" fill="url(#bg)"/><!-- Original voxel grass block, with a broken face under the inspection lens. -->
+<path d="M96 168L236 90L376 168V324L236 404L96 324Z" fill="#143e37" stroke="#143e37" stroke-width="12" stroke-linejoin="round"/>
+<path d="M96 168L236 246V404L96 324Z" fill="#9b693e"/>
+<path d="M236 246L376 168V324L236 404Z" fill="#70482f"/>
+<path d="M96 168L236 90L376 168L236 246Z" fill="#9bd66c"/>
+<!-- Pixel patches follow the three faces of the cube. -->
+<path d="M124 152L152 136L180 152L152 168ZM208 121L236 105L264 121L236 137ZM264 184L292 168L320 184L292 200Z" fill="#b9e58b"/>
+<path d="M180 184L208 168L236 184L208 200ZM292 136L320 152L292 168L264 152Z" fill="#79bc51"/>
+<path d="M96 168L236 246V286L208 270V254L180 238V254L152 238V222L124 206V222L96 206Z" fill="#65a546"/>
+<path d="M236 246L376 168V206L348 222V238L320 254V238L292 254V270L264 286V270L236 286Z" fill="#43853c"/>
+<path d="M112 254L140 270V298L112 282ZM168 302L196 318V346L168 330ZM208 358L236 374V402L208 386Z" fill="#b58250"/>
+<path d="M140 310L168 326V342L140 326ZM196 274L224 290V306L196 290Z" fill="#795033"/>
+<path d="M264 306L292 290V318L264 334ZM320 274L348 258V286L320 302Z" fill="#895c38"/>
+<!-- Chunky white magnifier and a stepped fracture: inspection of a broken block. -->
+<path d="M371 353L418 400" fill="none" stroke="#064e3b" stroke-width="44" stroke-linecap="square"/>
+<path d="M371 353L418 400" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="square"/>
+<circle cx="326" cy="304" r="76" fill="#064e3b"/>
+<circle cx="326" cy="304" r="62" fill="#895c38" stroke="#ffffff" stroke-width="20"/>
+<path d="M286 272H310V296H334V320H358V344" fill="none" stroke="#382b25" stroke-width="12" stroke-linejoin="miter"/>
+<path d="M334 296V280H350M310 320H294" fill="none" stroke="#382b25" stroke-width="10"/>
+<path d="M286 266H310" fill="none" stroke="#d9b282" stroke-width="8"/>
+</g>
+<g font-family="Helvetica, Arial, sans-serif">
+<text x="310" y="133" font-size="80" font-weight="700" letter-spacing="-2" fill="#ffffff">Just<tspan fill="#6ee7b7">Logs</tspan></text>
+<text x="314" y="183" font-size="28" font-weight="700" fill="#e2f5ee">Know who broke it. Roll it back.</text>
+<text x="314" y="221" font-size="20" fill="#9cbbb5">Block history · Container logs · Rollback</text>
+</g>
+<!-- Illustrative audit entry, matching the icon's inspection theme. -->
+<rect x="822" y="63" width="330" height="166" rx="16" fill="#102f30" stroke="#28534e" stroke-width="2"/>
+<path d="M822 100H1152" stroke="#28534e" stroke-width="2"/>
+<rect x="840" y="78" width="9" height="9" fill="#6ee7b7"/>
+<text x="859" y="88" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1" fill="#9cbbb5">BLOCK INSPECTOR</text>
+<g font-family="Menlo, Consolas, monospace" font-size="16">
+<text x="842" y="129" fill="#6ee7b7">Steve <tspan fill="#fca5a5">broke</tspan></text>
+<text x="842" y="155" fill="#ffffff">grass_block <tspan fill="#9cbbb5">· 2m ago</tspan></text>
+<text x="842" y="202" fill="#6ee7b7">↶ <tspan fill="#d4e8e1">History found. Undo ready.</tspan></text>
+</g>
 </svg>

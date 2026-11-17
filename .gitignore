@@ -19,6 +19,8 @@ hs_err_pid*
 !gradle/wrapper/gradle-wrapper.jar
 
 # AI tooling and local-only notes (the repo is open source, these are not committed)
+AGENTS.md
+.Codex/
 CLAUDE.md
 .claude/
 docs/DECISIONS.md
