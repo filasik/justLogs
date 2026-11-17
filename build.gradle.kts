@@ -94,6 +94,14 @@ tasks.runServer {
     }
 }
 
+// Changelog text of the current version only (the "## <version>" section of CHANGELOG.md)
+val releaseNotes: Provider<String> = providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.map { text ->
+    val header = "## " + project.version
+    // "## 0.2.1" or "## 0.2.1 - 2026-11-17"
+    val section = text.lineSequence().dropWhile { it.trim() != header && !it.startsWith(header + " ") }.drop(1).takeWhile { !it.startsWith("## ") }.joinToString("\n").trim()
+    section.ifEmpty { throw GradleException("CHANGELOG.md has no section '" + header + "'") }
+}
+
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")
     projectId = project.property("modrinthId") as String
@@ -102,6 +110,6 @@ modrinth {
     uploadFile.set(tasks.shadowJar)
     gameVersions.addAll(project.property("minecraftVersion") as String)
     loaders.addAll("paper", "purpur", "folia")
-    changelog = providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText
+    changelog = releaseNotes
     syncBodyFrom = providers.fileContents(layout.projectDirectory.file("docs/modrinth.md")).asText
 }
