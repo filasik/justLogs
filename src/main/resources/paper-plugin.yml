@@ -29,6 +29,27 @@ permissions:
   justlogs.lookup.container:
     description: Look up what was put into and taken out of containers
     default: op
+  justlogs.lookup.chat:
+    description: Look up chat messages (a:chat)
+    default: op
+  justlogs.lookup.command:
+    description: Look up executed commands (a:command)
+    default: op
+  justlogs.lookup.session:
+    description: Look up player login/logout sessions (a:session)
+    default: op
+  justlogs.lookup.entity:
+    description: Look up entity kills, deaths, hanging and vehicle events (a:entity)
+    default: op
+  justlogs.lookup.item:
+    description: Look up dropped, picked up and crafted items (a:item)
+    default: op
+  justlogs.lookup.interact:
+    description: Look up block interactions (a:click)
+    default: op
+  justlogs.purge:
+    description: Delete old log rows (/jo purge)
+    default: op
   justlogs.lookup.global:
     description: Search the whole server and use a radius above lookup.max-radius
     default: op
@@ -61,6 +82,12 @@ permissions:
       justlogs.inspect: true
       justlogs.lookup: true
       justlogs.lookup.container: true
+      justlogs.lookup.chat: true
+      justlogs.lookup.command: true
+      justlogs.lookup.session: true
+      justlogs.lookup.entity: true
+      justlogs.lookup.item: true
+      justlogs.lookup.interact: true
       justlogs.teleport: true
   justlogs.admin:
     description: Everything
@@ -71,6 +98,7 @@ permissions:
       justlogs.rollback: true
       justlogs.restore: true
       justlogs.rollback.global: true
+      justlogs.purge: true
       justlogs.status: true
       justlogs.reload: true
       justlogs.notify: true

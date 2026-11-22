@@ -12,9 +12,20 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.skerik.justlogs.model.BlockRecord;
+import me.skerik.justlogs.model.ChatRecord;
+import me.skerik.justlogs.model.CommandRecord;
 import me.skerik.justlogs.model.ContainerRecord;
+import me.skerik.justlogs.model.EntityRecord;
+import me.skerik.justlogs.model.InteractRecord;
+import me.skerik.justlogs.model.ItemRecord;
 import me.skerik.justlogs.model.SignRecord;
+import me.skerik.justlogs.model.SessionRecord;
+import me.skerik.justlogs.storage.EntityStore;
+import me.skerik.justlogs.storage.InteractStore;
+import me.skerik.justlogs.storage.ItemStore;
+import me.skerik.justlogs.storage.SessionStore;
 import me.skerik.justlogs.storage.SignStore;
+import me.skerik.justlogs.storage.TextStore;
 import me.skerik.justlogs.model.LogRecord;
 import me.skerik.justlogs.storage.BlockStore;
 import me.skerik.justlogs.storage.ContainerStore;
@@ -39,6 +50,11 @@ public final class BatchWriter {
     private final BlockStore blocks;
     private final ContainerStore containers = new ContainerStore();
     private final SignStore signs = new SignStore();
+    private final TextStore texts = new TextStore();
+    private final SessionStore sessions = new SessionStore();
+    private final InteractStore interacts = new InteractStore();
+    private final ItemStore items = new ItemStore();
+    private final EntityStore entities = new EntityStore();
     private final @Nullable Spool spool;
     private final Logger log;
     private final Throughput throughput = new Throughput();
@@ -236,14 +252,34 @@ public final class BatchWriter {
         List<BlockRecord> blockRows = new ArrayList<>(batch.size());
         List<ContainerRecord> containerRows = new ArrayList<>();
         List<SignRecord> signRows = new ArrayList<>();
+        List<ChatRecord> chatRows = new ArrayList<>();
+        List<CommandRecord> commandRows = new ArrayList<>();
+        List<SessionRecord> sessionRows = new ArrayList<>();
+        List<InteractRecord> interactRows = new ArrayList<>();
+        List<ItemRecord> itemRows = new ArrayList<>();
+        List<EntityRecord> entityRows = new ArrayList<>();
         for (LogRecord r : batch) {
-            if (r instanceof BlockRecord b) blockRows.add(b);
-            else if (r instanceof ContainerRecord cr) containerRows.add(cr);
-            else if (r instanceof SignRecord sr) signRows.add(sr);
+            switch (r) {
+                case BlockRecord b -> blockRows.add(b);
+                case ContainerRecord cr -> containerRows.add(cr);
+                case SignRecord sr -> signRows.add(sr);
+                case ChatRecord ch -> chatRows.add(ch);
+                case CommandRecord cm -> commandRows.add(cm);
+                case SessionRecord se -> sessionRows.add(se);
+                case InteractRecord in -> interactRows.add(in);
+                case ItemRecord it -> itemRows.add(it);
+                case EntityRecord en -> entityRows.add(en);
+            }
         }
         blocks.insert(conn, ids, blockRows);
         containers.insert(conn, ids, containerRows);
         signs.insert(conn, ids, signRows);
+        texts.insertChat(conn, ids, chatRows);
+        texts.insertCommand(conn, ids, commandRows);
+        sessions.insert(conn, ids, sessionRows);
+        interacts.insert(conn, ids, interactRows);
+        items.insert(conn, ids, itemRows);
+        entities.insert(conn, ids, entityRows);
     }
 
     private void completeWaiters() {

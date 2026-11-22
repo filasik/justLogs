@@ -14,9 +14,15 @@ import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.config.Settings;
 import me.skerik.justlogs.inspect.InspectListener;
 import me.skerik.justlogs.listener.CauseTracker;
+import me.skerik.justlogs.listener.ChatListener;
+import me.skerik.justlogs.listener.CommandListener;
 import me.skerik.justlogs.listener.ContainerListener;
+import me.skerik.justlogs.listener.EntityListener;
+import me.skerik.justlogs.listener.InteractListener;
+import me.skerik.justlogs.listener.ItemListener;
 import me.skerik.justlogs.listener.NatureListener;
 import me.skerik.justlogs.listener.PlayerBlockListener;
+import me.skerik.justlogs.listener.SessionListener;
 import me.skerik.justlogs.listener.SignListener;
 import me.skerik.justlogs.queue.BatchWriter;
 import me.skerik.justlogs.queue.LogQueue;
@@ -126,8 +132,17 @@ public final class JustLogs extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new ContainerListener(ctx), this);
         getServer().getPluginManager().registerEvents(new SignListener(ctx), this);
         getServer().getPluginManager().registerEvents(new NatureListener(ctx, causes), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new CommandListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new SessionListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new InteractListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new ItemListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new EntityListener(ctx), this);
         timers.add(scheduler.runAsyncTimer(causes::expire, 20L * 30, 20L * 30));
         getServer().getPluginManager().registerEvents(new InspectListener(ctx), this);
+
+        long purgeTicks = settings.purge().intervalHours() * 3600L * 20L;
+        timers.add(scheduler.runAsyncTimer(ctx.purge::runRetention, 20L * 60, purgeTicks));
 
         timers.add(scheduler.runAsyncTimer(ctx.rollback::expire, 20L * 10, 20L * 10));
         timers.add(scheduler.runAsyncTimer(() -> ctx.results.expire(ctx.settings().lookup().resultTtlSeconds() * 1000L),

@@ -11,12 +11,13 @@ import me.skerik.justlogs.query.ActionGroups;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 /** Tab completion for the free-form query: first the parameter names, then values that fit the parameter. */
 final class QuerySuggestions {
 
-    private static final List<String> KEYS = List.of("u:", "t:", "r:", "a:", "b:", "w:", "at:", "#verbose", "#count", "#silent");
+    private static final List<String> KEYS = List.of("u:", "t:", "r:", "a:", "b:", "e:", "k:", "w:", "at:", "#verbose", "#count", "#silent");
     private static final List<String> TIMES = List.of("30m", "1h", "12h", "1d", "3d", "7d", "2d-1d");
     private static final List<String> RADII = List.of("5", "10", "25", "50", "#world", "#chunk", "#global");
     private static final int MAX_VALUES = 60;
@@ -40,7 +41,7 @@ final class QuerySuggestions {
             String value = token.substring(colon + 1);
             int comma = value.lastIndexOf(',');
             String typed = value.substring(comma + 1);
-            boolean negation = typed.startsWith("!") && (key.equals("u") || key.equals("b"));
+            boolean negation = typed.startsWith("!") && (key.equals("u") || key.equals("b") || key.equals("e"));
             String head = token.substring(0, colon + 1) + value.substring(0, comma + 1) + (negation ? "!" : "");
             String prefix = (negation ? typed.substring(1) : typed).toLowerCase(Locale.ROOT);
             values(key).filter(v -> v.toLowerCase(Locale.ROOT).startsWith(prefix)).limit(MAX_VALUES)
@@ -57,6 +58,8 @@ final class QuerySuggestions {
             case "a" -> Stream.concat(ActionGroups.NAMES.stream(), Stream.of(Action.values()).map(Action::key));
             case "b" -> Stream.of(Material.values()).filter(m -> !m.isLegacy() && (m.isBlock() || m.isItem()))
                     .map(m -> m.name().toLowerCase(Locale.ROOT));
+            case "e" -> Stream.of(EntityType.values()).filter(t -> t != EntityType.UNKNOWN)
+                    .map(t -> t.name().toLowerCase(Locale.ROOT));
             case "w" -> Bukkit.getWorlds().stream().map(World::getName);
             default -> Stream.empty();
         };

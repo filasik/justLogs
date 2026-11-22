@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 - 2026-11-22
+- Chat, command and session logging (`a:chat`, `a:command`, `a:session`, `+session`, `-session`):
+  - Authentication commands (`/login`, `/register`, `/changepassword`, `/2fa`, `/totp`, `/email`, `/auth`) have their arguments redacted to `***` before entering the queue; `logging.command-blacklist` skips listed commands completely.
+  - Player join/quit sessions store HMAC-SHA256 hashed IPs (`secrets.key`), with optional raw IP logging (`logging.log-raw-ip`, off by default).
+- Interaction logging (`a:click`): doors, buttons, levers, pressure plates, note blocks and bells, debounced per player and block position.
+- Item logging (`a:item`, `a:drop`, `a:pickup`, `a:craft`): dropped, picked up and crafted items with deduplicated item metadata.
+- Entity logging (`a:entity`, `a:kill`): entity kills, player deaths, item frame/painting place and break, vehicle destruction, shearing, taming, leashing and bucket captures. Filter by entity type with `e:<entity>` (supports `!` negation).
+- Keyword text search `k:<word>` (supports quoted phrases like `k:"diamond sword"`) across chat, commands and signs, plus multi-category keyset-paged queries (e.g. `a:chat,command`).
+- Per-category lookup permissions (`justlogs.lookup.chat`, `justlogs.lookup.command`, `justlogs.lookup.session`, `justlogs.lookup.entity`, `justlogs.lookup.item`, `justlogs.lookup.interact`).
+- Log purging and automatic retention: `/jo purge t:<age> [a:<category>] [w:<world>] [#optimize]` with `/jo purge confirm`, orphaned attachment cleanup (`jl_block_nbt`, `jl_item_data`), and optional `purge.retention-days`.
+- Config-version 7 (existing configs are updated automatically).
+
 ## 0.3.0 - 2026-11-22
 - Sign logging: every text edit of a sign (front or back side) is recorded with the old and new text. Look it up with `a:sign` (for example `/jo lookup a:sign r:20 t:1d`) or `#verbose` for the old text. Signs are not part of rollback yet.
 - New `logging.signs` switch (config-version 6, existing configs are updated automatically).

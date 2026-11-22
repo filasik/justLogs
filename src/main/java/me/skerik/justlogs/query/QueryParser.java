@@ -50,11 +50,14 @@ public final class QueryParser {
         List<String> actionTexts = new ArrayList<>();
         List<String> materials = List.of();
         boolean materialsNegated = false;
+        List<String> entities = List.of();
+        boolean entitiesNegated = false;
+        String keyword = null;
         String world = null;
         int[] at = null;
         Set<LogQuery.Flag> flags = EnumSet.noneOf(LogQuery.Flag.class);
 
-        for (String token : input.strip().split("\\s+")) {
+        for (String token : tokenize(input)) {
             if (token.isEmpty()) continue;
             if (token.startsWith("#")) {
                 try {
@@ -122,6 +125,23 @@ public final class QueryParser {
                     if (keys.isEmpty()) throw new QuerySyntaxException("missing-value", "b:");
                     materials = List.copyOf(keys);
                 }
+                case "e" -> {
+                    entitiesNegated = value.startsWith("!");
+                    Set<String> keys = new LinkedHashSet<>();
+                    for (String e : split(entitiesNegated ? value.substring(1) : value)) {
+                        String k = e.toLowerCase(Locale.ROOT);
+                        if (k.startsWith("minecraft:")) k = k.substring("minecraft:".length());
+                        if (!MATERIAL.matcher(k).matches()) throw new QuerySyntaxException("bad-entity", e);
+                        keys.add(k);
+                    }
+                    if (keys.isEmpty()) throw new QuerySyntaxException("missing-value", "e:");
+                    entities = List.copyOf(keys);
+                }
+                case "k" -> {
+                    String k = value.strip();
+                    if (k.isEmpty()) throw new QuerySyntaxException("missing-value", "k:");
+                    keyword = k;
+                }
                 case "w" -> {
                     if (!WORLD.matcher(value).matches()) throw new QuerySyntaxException("bad-world", value);
                     world = value;
@@ -135,7 +155,31 @@ public final class QueryParser {
             timeText = Durations.format(defaultSeconds).replace(" ", "");
         }
         return new LogQuery(users, usersNegated, from, to, timeText, radius, Set.copyOf(actions), List.copyOf(actionTexts),
-                materials, materialsNegated, world, at, flags.isEmpty() ? Set.of() : Set.copyOf(flags));
+                materials, materialsNegated, entities, entitiesNegated, keyword, world, at,
+                flags.isEmpty() ? Set.of() : Set.copyOf(flags));
+    }
+
+    /** Splits on whitespace while keeping quoted sections (e.g. {@code k:"hello world"}) together. */
+    private static List<String> tokenize(String input) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        boolean inQuotes = false;
+        String s = input.strip();
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (ch == '"') {
+                inQuotes = !inQuotes;
+            } else if (Character.isWhitespace(ch) && !inQuotes) {
+                if (!cur.isEmpty()) {
+                    tokens.add(cur.toString());
+                    cur.setLength(0);
+                }
+            } else {
+                cur.append(ch);
+            }
+        }
+        if (!cur.isEmpty()) tokens.add(cur.toString());
+        return tokens;
     }
 
     private static Radius radius(String value) throws QuerySyntaxException {

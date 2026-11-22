@@ -5,14 +5,17 @@ import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.EntityType;
 
 /** Cheap conversions from Bukkit types to the strings stored in the log. No allocation for materials. */
 public final class Keys {
 
     private static final Map<Material, String> MATERIALS = new EnumMap<>(Material.class);
+    private static final Map<EntityType, String> ENTITIES = new EnumMap<>(EntityType.class);
 
     static {
         for (Material m : Material.values()) MATERIALS.put(m, m.name().toLowerCase(Locale.ROOT));
+        for (EntityType e : EntityType.values()) ENTITIES.put(e, e.name().toLowerCase(Locale.ROOT));
     }
 
     private Keys() {
@@ -21,6 +24,11 @@ public final class Keys {
     /** {@code DIAMOND_ORE} becomes {@code diamond_ore}. */
     public static String material(Material m) {
         return MATERIALS.get(m);
+    }
+
+    /** {@code CREEPER} becomes {@code creeper}. */
+    public static String entity(EntityType e) {
+        return ENTITIES.get(e);
     }
 
     /** The block state without brackets: {@code facing=north,half=top}; empty when the block has no properties. */

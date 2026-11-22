@@ -26,6 +26,7 @@ public final class IdCache {
     private final Map<String, Integer> worlds = new ConcurrentHashMap<>();
     private final Map<String, Integer> materials = new ConcurrentHashMap<>();
     private final Map<String, Integer> blockData = new ConcurrentHashMap<>();
+    private final Map<String, Integer> entities = new ConcurrentHashMap<>();
 
     public IdCache(DbConfig.Dialect dialect, String server) {
         this.dialect = dialect;
@@ -37,6 +38,9 @@ public final class IdCache {
         try (Statement st = c.createStatement()) {
             try (ResultSet rs = st.executeQuery("SELECT id, name FROM " + Migrations.table("materials"))) {
                 while (rs.next()) materials.put(rs.getString(2), rs.getInt(1));
+            }
+            try (ResultSet rs = st.executeQuery("SELECT id, name FROM " + Migrations.table("entities"))) {
+                while (rs.next()) entities.put(rs.getString(2), rs.getInt(1));
             }
         }
         try (PreparedStatement ps = c.prepareStatement("SELECT id, name FROM " + Migrations.table("worlds") + " WHERE server = ?")) {
@@ -64,6 +68,16 @@ public final class IdCache {
         if (cached != null) return cached;
         int id = intern(c, "blockdata", "data", data);
         blockData.put(data, id);
+        return id;
+    }
+
+    /** Entity type id, 0 for the empty key (no entity). */
+    public int entity(Connection c, String key) throws SQLException {
+        if (key.isEmpty()) return 0;
+        Integer cached = entities.get(key);
+        if (cached != null) return cached;
+        int id = intern(c, "entities", "name", key);
+        entities.put(key, id);
         return id;
     }
 
@@ -161,14 +175,23 @@ public final class IdCache {
     }
 
     public List<Integer> findMaterials(Connection c, List<String> keys) throws SQLException {
+        return findDictionary(c, "materials", materials, keys);
+    }
+
+    public List<Integer> findEntities(Connection c, List<String> keys) throws SQLException {
+        return findDictionary(c, "entities", entities, keys);
+    }
+
+    private List<Integer> findDictionary(Connection c, String tableName, Map<String, Integer> cache, List<String> keys)
+            throws SQLException {
         List<Integer> out = new ArrayList<>();
         for (String k : keys) {
-            Integer cached = materials.get(k.toLowerCase(Locale.ROOT));
+            Integer cached = cache.get(k.toLowerCase(Locale.ROOT));
             if (cached != null) out.add(cached);
         }
         if (out.size() == keys.size()) return out;
         out.clear();
-        try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + Migrations.table("materials") + " WHERE name = ?")) {
+        try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + Migrations.table(tableName) + " WHERE name = ?")) {
             for (String k : keys) {
                 ps.setString(1, k.toLowerCase(Locale.ROOT));
                 try (ResultSet rs = ps.executeQuery()) {

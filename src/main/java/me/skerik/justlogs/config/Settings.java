@@ -17,13 +17,16 @@ import org.bukkit.configuration.file.FileConfiguration;
  */
 public record Settings(
         String locale, boolean updateCheck, boolean metrics, List<String> aliases, String serverName,
-        Logging logging, Queue queue, Lookup lookup, Rollback rollback, Storage storage) {
+        Logging logging, Queue queue, Lookup lookup, Rollback rollback, Purge purge, Storage storage) {
 
     /** Which loggers are on. {@code worldsBlacklist} holds exact world names. */
     public record Logging(boolean blockPlace, boolean blockBreak, boolean buckets, boolean fire, boolean explosions,
                           boolean fluids, boolean fallingBlocks, boolean pistons, boolean formFade,
                           boolean growth, boolean cropGrowth, boolean leafDecay, boolean entityChanges,
-                          boolean containers, boolean signs, Set<String> worldsBlacklist) {
+                          boolean containers, boolean signs, boolean chat, boolean commands,
+                          Set<String> commandBlacklist, boolean sessions, boolean logRawIp, boolean interactions,
+                          boolean itemDrops, boolean itemPickups, boolean itemCrafts, boolean entityKills,
+                          boolean playerDeaths, boolean hanging, boolean vehicles, Set<String> worldsBlacklist) {
 
         public boolean worldLogged(String world) {
             return !worldsBlacklist.contains(world);
@@ -39,6 +42,10 @@ public record Settings(
 
     /** {@code maxRows}: most log rows one rollback may load; above {@code confirmAbove} blocks it asks for /jo confirm. */
     public record Rollback(int maxRows, int confirmAbove, int confirmExpireSeconds, int msPerTick, int previewMaxBlocks) {
+    }
+
+    /** Automatic retention purge ({@code retentionDays} = 0 disables automatic purging). */
+    public record Purge(int retentionDays, int intervalHours) {
     }
 
     public record Storage(String type, String sqliteFile, int sqlitePool, String host, int port, String database,
@@ -65,7 +72,14 @@ public record Settings(
                         c.getBoolean("logging.falling-blocks", true), c.getBoolean("logging.pistons", false),
                         c.getBoolean("logging.form-fade", true), c.getBoolean("logging.growth", true),
                         c.getBoolean("logging.crop-growth", false), c.getBoolean("logging.leaf-decay", false),
-                        c.getBoolean("logging.entity-changes", true), c.getBoolean("logging.containers", true), c.getBoolean("logging.signs", true),
+                        c.getBoolean("logging.entity-changes", true), c.getBoolean("logging.containers", true),
+                        c.getBoolean("logging.signs", true), c.getBoolean("logging.chat", true),
+                        c.getBoolean("logging.commands", true), normalizeCommands(c.getStringList("logging.command-blacklist")),
+                        c.getBoolean("logging.sessions", true), c.getBoolean("logging.log-raw-ip", false),
+                        c.getBoolean("logging.interactions", true), c.getBoolean("logging.item-drops", true),
+                        c.getBoolean("logging.item-pickups", false), c.getBoolean("logging.item-crafts", false),
+                        c.getBoolean("logging.entity-kills", true), c.getBoolean("logging.player-deaths", true),
+                        c.getBoolean("logging.hanging", true), c.getBoolean("logging.vehicles", true),
                         new HashSet<>(c.getStringList("logging.worlds-blacklist"))),
                 new Queue(bounded(c, "queue.flush-interval-ms", 50, 10_000, 250, log),
                         bounded(c, "queue.batch-size", 100, 50_000, 2000, log),
@@ -82,7 +96,19 @@ public record Settings(
                         bounded(c, "rollback.confirm-expire-seconds", 10, 600, 60, log),
                         bounded(c, "rollback.ms-per-tick", 1, 40, 8, log),
                         bounded(c, "rollback.preview-max-blocks", 100, 1_000_000, 50_000, log)),
+                new Purge(bounded(c, "purge.retention-days", 0, 3650, 0, log),
+                        bounded(c, "purge.interval-hours", 1, 168, 24, log)),
                 storage(c, log));
+    }
+
+    private static Set<String> normalizeCommands(List<String> raw) {
+        Set<String> out = new HashSet<>();
+        for (String s : raw) {
+            String clean = s.strip().toLowerCase(Locale.ROOT);
+            if (clean.startsWith("/")) clean = clean.substring(1);
+            if (!clean.isEmpty()) out.add(clean);
+        }
+        return Set.copyOf(out);
     }
 
     private static Storage storage(FileConfiguration c, Logger log) {

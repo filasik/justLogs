@@ -2,6 +2,7 @@ package me.skerik.justlogs;
 
 import java.util.logging.Logger;
 import me.skerik.justlogs.command.LookupService;
+import me.skerik.justlogs.command.PurgeService;
 import me.skerik.justlogs.command.ResultCache;
 import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.config.Settings;
@@ -33,6 +34,7 @@ public final class Context {
     public final ResultCache results = new ResultCache();
     public final LookupService lookup;
     public final RollbackService rollback;
+    public final PurgeService purge;
     public final int schemaVersion;
 
     private volatile Settings settings;
@@ -53,6 +55,7 @@ public final class Context {
         update(settings, messages);
         this.lookup = new LookupService(this);
         this.rollback = new RollbackService(this);
+        this.purge = new PurgeService(this);
     }
 
     public void update(Settings settings, Messages messages) {

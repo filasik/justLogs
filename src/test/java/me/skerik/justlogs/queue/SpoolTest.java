@@ -14,8 +14,15 @@ import java.util.logging.Logger;
 import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.Actor;
 import me.skerik.justlogs.model.BlockRecord;
+import me.skerik.justlogs.model.ChatRecord;
+import me.skerik.justlogs.model.CommandRecord;
 import me.skerik.justlogs.model.ContainerRecord;
+import me.skerik.justlogs.model.EntityRecord;
+import me.skerik.justlogs.model.InteractRecord;
+import me.skerik.justlogs.model.ItemRecord;
 import me.skerik.justlogs.model.LogRecord;
+import me.skerik.justlogs.model.SessionRecord;
+import me.skerik.justlogs.model.SignRecord;
 import me.skerik.justlogs.storage.BlockStore;
 import me.skerik.justlogs.storage.Database;
 import me.skerik.justlogs.storage.DbConfig;
@@ -157,5 +164,28 @@ class SpoolTest {
         } finally {
             db.close();
         }
+    }
+
+    @Test
+    void roundTripsExtendedRecordTypes() {
+        Spool spool = new Spool(dir.resolve("ext"), LOG);
+        Actor steve = Actor.player(UUID.randomUUID(), "Steve");
+        List<LogRecord> all = List.of(
+                new SignRecord(100, steve, Action.SIGN_EDIT, "world", 1, 64, 1, 1, "old", "new"),
+                new ChatRecord(101, steve, "world", 1, 64, 1, "hi there"),
+                new CommandRecord(102, steve, "world", 1, 64, 1, "/spawn"),
+                new SessionRecord(103, steve, Action.LOGIN, "world", 1, 64, 1, "hash", null),
+                new InteractRecord(104, steve, Action.CLICK, "world", 2, 64, 2, "oak_button"),
+                new ItemRecord(105, steve, Action.DROP, "world", 2, 64, 2, "diamond", 3, new byte[]{7, 8}),
+                new EntityRecord(106, steve, Action.PLAYER_DEATH, "world", 3, 64, 3, "player", steve, 5, "Steve", "fall")
+        );
+        assertTrue(spool.write(all));
+        Spool.Batch batch = spool.peek().orElseThrow();
+        assertEquals(all.size(), batch.records().size());
+        assertEquals("hi there", ((ChatRecord) batch.records().get(1)).message());
+        assertEquals("hash", ((SessionRecord) batch.records().get(3)).ipHash());
+        assertArrayEquals(new byte[]{7, 8}, ((ItemRecord) batch.records().get(5)).itemData());
+        assertEquals("fall", ((EntityRecord) batch.records().get(6)).detail());
+        spool.ack(batch);
     }
 }

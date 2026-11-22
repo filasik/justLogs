@@ -7,7 +7,7 @@
 # Config format version. Do not change: when you update the plugin, options that are new in the
 # newer version are added to this file automatically (your values stay, a backup is saved first).
 # (Developer: raise this number whenever you add a key, and add the key with its comment here.)
-config-version: 6
+config-version: 7
 
 # Language of all player-facing messages: en, cs.
 # The files plugins/JustLogs/messages_<locale>.yml are yours to edit; missing keys fall back to the built-in text.
@@ -60,6 +60,27 @@ logging:
   containers: true
   # Sign text edits (who wrote what on which side). Look up with a:sign. Not part of rollback yet.
   signs: true
+  # Player chat messages (a:chat, search text with k:)
+  chat: true
+  # Commands executed by players (a:command). Passwords in /login, /register, /2fa, ... are always redacted.
+  commands: true
+  # Commands never logged at all (without leading slash, e.g. [msg, tell])
+  command-blacklist: []
+  # Player join and quit events (a:session, +session, -session) with HMAC-hashed IP
+  sessions: true
+  # Store plain IP addresses in addition to the HMAC hash (false by default for privacy)
+  log-raw-ip: false
+  # Doors, buttons, levers, pressure plates, note blocks and bells (a:click, debounced per player/block)
+  interactions: true
+  # Items dropped on the ground (a:drop), picked up (a:pickup) and crafted (a:craft)
+  item-drops: true
+  item-pickups: false
+  item-crafts: false
+  # Entity kills, player deaths, item frames/paintings and vehicles (a:entity, a:kill)
+  entity-kills: true
+  player-deaths: true
+  hanging: true
+  vehicles: true
   # Worlds that are never logged (exact names)
   worlds-blacklist: []
 
@@ -97,6 +118,12 @@ rollback:
   ms-per-tick: 8
   # Largest preview (ghost blocks shown only to you); bigger rollbacks need /jo confirm without preview
   preview-max-blocks: 50000
+
+purge:
+  # Automatically delete log rows older than this many days (0 = disabled, manual /jo purge only)
+  retention-days: 0
+  # How often the automatic retention purge runs (hours)
+  interval-hours: 24
 
 storage:
   # sqlite  = single file in the plugin folder, zero setup (default)

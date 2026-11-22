@@ -60,6 +60,16 @@ class QueryParserTest {
     }
 
     @Test
+    void parsesEntityAndQuotedKeywordFilters() throws Exception {
+        LogQuery q = parse("a:entity e:!villager,wandering_trader k:\"hello diamond world\"");
+        assertEquals(List.of("villager", "wandering_trader"), q.entities());
+        assertTrue(q.entitiesNegated());
+        assertEquals("hello diamond world", q.keyword());
+        assertTrue(q.canonical().contains("k:\"hello diamond world\""));
+        assertTrue(q.canonical().contains("e:!villager,wandering_trader"));
+    }
+
+    @Test
     void tagsAreExpandedByTheResolver() throws Exception {
         LogQuery q = QueryParser.parse("b:#ores", NOW, tag -> Optional.of(Set.of("diamond_ore")), 0);
         assertEquals(List.of("diamond_ore"), q.materials());

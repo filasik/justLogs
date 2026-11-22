@@ -122,14 +122,27 @@ public final class LookupService {
         Settings lookupSettings = new Settings(ctx);
         LogQuery q = QueryParser.parse(raw, nowSec(), LookupService::tag, lookupSettings.defaultTime());
         boolean unscoped = q.radius().kind() == Radius.Kind.NONE && q.users().isEmpty() && q.materials().isEmpty()
-                && q.world() == null && q.at() == null;
+                && q.entities().isEmpty() && q.keyword() == null && q.world() == null && q.at() == null;
         if (unscoped) {
             if (!(sender instanceof Player)) throw new QuerySyntaxException("need-scope", q.canonical());
             q = q.withRadius(Radius.cube(lookupSettings.defaultRadius()));
         }
-        if (QueryCompiler.categoryOf(q) == me.skerik.justlogs.model.Category.CONTAINER
-                && !sender.hasPermission("justlogs.lookup.container")) {
-            throw new QuerySyntaxException("no-container", q.canonical());
+        for (me.skerik.justlogs.model.Category cat : QueryCompiler.categoriesOf(q)) {
+            switch (cat) {
+                case CONTAINER -> {
+                    if (!sender.hasPermission("justlogs.lookup.container")) {
+                        throw new QuerySyntaxException("no-container", q.canonical());
+                    }
+                }
+                case CHAT, COMMAND, SESSION, ENTITY, ITEM, INTERACT -> {
+                    String perm = "justlogs.lookup." + cat.table();
+                    if (!sender.hasPermission(perm)) {
+                        throw new QuerySyntaxException("no-category", cat.table());
+                    }
+                }
+                case BLOCK, SIGN -> {
+                }
+            }
         }
         boolean global = sender.hasPermission("justlogs.lookup.global");
         if (q.radius().kind() == Radius.Kind.GLOBAL && !global) throw new QuerySyntaxException("no-global", q.canonical());

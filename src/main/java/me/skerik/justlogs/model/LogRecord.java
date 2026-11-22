@@ -4,7 +4,8 @@ package me.skerik.justlogs.model;
  * An event captured by a listener, immutable and free of Bukkit types so the write path stays testable without a
  * server. Listeners only fill it with cheap values; every database id and conversion happens on the writer thread.
  */
-public sealed interface LogRecord permits BlockRecord, ContainerRecord, SignRecord {
+public sealed interface LogRecord permits BlockRecord, ContainerRecord, SignRecord, ChatRecord, CommandRecord,
+        SessionRecord, InteractRecord, ItemRecord, EntityRecord {
 
     /** Unix seconds. */
     int time();

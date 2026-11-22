@@ -8,8 +8,13 @@ import java.util.List;
 import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.model.BlockEntry;
 import me.skerik.justlogs.model.ContainerEntry;
-import me.skerik.justlogs.model.SignEntry;
+import me.skerik.justlogs.model.EntityEntry;
+import me.skerik.justlogs.model.InteractEntry;
+import me.skerik.justlogs.model.ItemEntry;
 import me.skerik.justlogs.model.LogEntry;
+import me.skerik.justlogs.model.SessionEntry;
+import me.skerik.justlogs.model.SignEntry;
+import me.skerik.justlogs.model.TextEntry;
 import me.skerik.justlogs.util.Durations;
 import me.skerik.justlogs.util.Keys;
 import net.kyori.adventure.text.Component;
@@ -53,6 +58,19 @@ final class LookupRenderer {
                     Messages.text("data", c.hasData() ? "*" : ""));
             case SignEntry s -> m.get("action." + e.action().key(), Messages.text("text", oneLine(s.newText())),
                     Messages.text("side", m.raw(s.side() == 1 ? "sign.back" : "sign.front")));
+            case TextEntry t -> m.get("action." + e.action().key(), Messages.text("message", oneLine(t.message())));
+            case SessionEntry s -> m.get("action." + e.action().key(),
+                    Messages.text("ip", s.ip() != null ? s.ip() : (s.ipHash() != null ? "#" + s.ipHash().substring(0, Math.min(8, s.ipHash().length())) : "-")));
+            case InteractEntry i -> m.get("action." + e.action().key(),
+                    Messages.text("block", Keys.pretty(i.material())));
+            case ItemEntry it -> m.get("action." + e.action().key(),
+                    Messages.text("amount", String.valueOf(it.amount())),
+                    Messages.text("item", Keys.pretty(it.material())),
+                    Messages.text("data", it.hasData() ? "*" : ""));
+            case EntityEntry en -> m.get("action." + e.action().key(),
+                    Messages.text("entity", en.name() != null ? en.name() + " (" + Keys.pretty(en.entityType()) + ")"
+                            : (en.victim() != null ? en.victim() : Keys.pretty(en.entityType()))),
+                    Messages.text("detail", en.detail() != null ? Keys.pretty(en.detail()) : ""));
         };
         Component pos = m.get("lookup.pos", Messages.text("x", String.valueOf(e.x())), Messages.text("y", String.valueOf(e.y())),
                 Messages.text("z", String.valueOf(e.z())), Messages.text("world", e.world()),
@@ -62,22 +80,32 @@ final class LookupRenderer {
     }
 
     private static Component detail(Messages m, LogEntry entry) {
-        if (entry instanceof ContainerEntry c) {
-            return m.get("lookup.row-verbose-container", Messages.text("id", String.valueOf(c.id())),
-                    Messages.text("time", TIME.format(Instant.ofEpochSecond(c.time()))),
-                    Messages.text("holder", c.holderMaterial()), Messages.text("item", c.material()),
-                    Messages.text("data", c.hasData() ? "yes" : "no"));
-        }
-        if (entry instanceof SignEntry s) {
-            return m.get("lookup.row-verbose-sign", Messages.text("id", String.valueOf(s.id())),
-                    Messages.text("time", TIME.format(Instant.ofEpochSecond(s.time()))),
-                    Messages.text("old", oneLine(s.oldText())), Messages.text("new", oneLine(s.newText())));
-        }
-        BlockEntry e = (BlockEntry) entry;
-        return m.get("lookup.row-verbose", Messages.text("id", String.valueOf(e.id())),
-                Messages.text("time", TIME.format(Instant.ofEpochSecond(e.time()))),
-                Messages.text("old_state", state(e.oldMaterial(), e.oldData())),
-                Messages.text("new_state", state(e.newMaterial(), e.newData())));
+        String time = TIME.format(Instant.ofEpochSecond(entry.time()));
+        return switch (entry) {
+            case ContainerEntry c -> m.get("lookup.row-verbose-container", Messages.text("id", String.valueOf(c.id())),
+                    Messages.text("time", time), Messages.text("holder", c.holderMaterial()),
+                    Messages.text("item", c.material()), Messages.text("data", c.hasData() ? "yes" : "no"));
+            case SignEntry s -> m.get("lookup.row-verbose-sign", Messages.text("id", String.valueOf(s.id())),
+                    Messages.text("time", time), Messages.text("old", oneLine(s.oldText())),
+                    Messages.text("new", oneLine(s.newText())));
+            case TextEntry t -> m.get("lookup.row-verbose-text", Messages.text("id", String.valueOf(t.id())),
+                    Messages.text("time", time), Messages.text("message", t.message()));
+            case SessionEntry s -> m.get("lookup.row-verbose-session", Messages.text("id", String.valueOf(s.id())),
+                    Messages.text("time", time),
+                    Messages.text("ip", s.ip() != null ? s.ip() : "-"),
+                    Messages.text("hash", s.ipHash() != null ? s.ipHash() : "-"));
+            case InteractEntry i -> m.get("lookup.row-verbose-interact", Messages.text("id", String.valueOf(i.id())),
+                    Messages.text("time", time), Messages.text("block", i.material()));
+            case ItemEntry it -> m.get("lookup.row-verbose-item", Messages.text("id", String.valueOf(it.id())),
+                    Messages.text("time", time), Messages.text("item", it.material()),
+                    Messages.text("amount", String.valueOf(it.amount())), Messages.text("data", it.hasData() ? "yes" : "no"));
+            case EntityEntry en -> m.get("lookup.row-verbose-entity", Messages.text("id", String.valueOf(en.id())),
+                    Messages.text("time", time), Messages.text("entity", en.entityType()),
+                    Messages.text("detail", en.detail() != null ? en.detail() : "-"));
+            case BlockEntry e -> m.get("lookup.row-verbose", Messages.text("id", String.valueOf(e.id())),
+                    Messages.text("time", time), Messages.text("old_state", state(e.oldMaterial(), e.oldData())),
+                    Messages.text("new_state", state(e.newMaterial(), e.newData())));
+        };
     }
 
     private static String oneLine(String text) {
