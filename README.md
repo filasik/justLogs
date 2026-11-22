@@ -2,9 +2,9 @@
 
 Block and container logging with an inspector, lookup and rollback. Know who broke, placed, burned, blew up or took what, and put it back.
 
-<p align="center"><a href="https://skerik.me/plugin"><img src="docs/assets/justfamily.png" width="128" alt="just plugins family"></a></p>
+<p align="center"><a href="https://skerik.me/plugins"><img src="docs/assets/justfamily.png" width="128" alt="just plugins family"></a></p>
 
-> Part of the **[just plugins family](https://skerik.me/plugin)**: a collection of Paper plugins (JustLogin, JustAuction, JustPolls, JustLogs and AI Friend). Find them all at [skerik.me/plugin](https://skerik.me/plugin).
+> Part of the **[just plugins family](https://skerik.me/plugins)**: a collection of Paper plugins (JustLogin, JustAuction, JustPolls, JustLogs and AI Friend). Find them all at [skerik.me/plugins](https://skerik.me/plugins). Join us on [Discord](https://discord.gg/yh3H6g3kX7).
 
 ## Installation
 1. Download the `.jar` from Modrinth / GitHub Releases.
