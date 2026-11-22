@@ -17,7 +17,15 @@ import org.jspecify.annotations.Nullable;
  */
 public record LogQuery(List<String> users, boolean usersNegated, long fromSec, long toSec, @Nullable String timeText,
                        Radius radius, Set<Action> actions, List<String> actionTexts, List<String> materials,
-                       boolean materialsNegated, @Nullable String world, int @Nullable [] at, Set<Flag> flags) {
+                       boolean materialsNegated, List<String> entities, boolean entitiesNegated,
+                       @Nullable String keyword, @Nullable String world, int @Nullable [] at, Set<Flag> flags) {
+
+    public LogQuery(List<String> users, boolean usersNegated, long fromSec, long toSec, @Nullable String timeText,
+                    Radius radius, Set<Action> actions, List<String> actionTexts, List<String> materials,
+                    boolean materialsNegated, @Nullable String world, int @Nullable [] at, Set<Flag> flags) {
+        this(users, usersNegated, fromSec, toSec, timeText, radius, actions, actionTexts, materials, materialsNegated,
+                List.of(), false, null, world, at, flags);
+    }
 
     public enum Flag { PREVIEW, VERBOSE, COUNT, SILENT }
 
@@ -31,7 +39,7 @@ public record LogQuery(List<String> users, boolean usersNegated, long fromSec, l
 
     public LogQuery withRadius(Radius newRadius) {
         return new LogQuery(users, usersNegated, fromSec, toSec, timeText, newRadius, actions, actionTexts, materials,
-                materialsNegated, world, at, flags);
+                materialsNegated, entities, entitiesNegated, keyword, world, at, flags);
     }
 
     /** Normalized text form, shown in result headers and stored with rollbacks. */
@@ -50,6 +58,8 @@ public record LogQuery(List<String> users, boolean usersNegated, long fromSec, l
         }
         if (!actionTexts.isEmpty()) parts.add("a:" + String.join(",", actionTexts));
         if (!materials.isEmpty()) parts.add("b:" + (materialsNegated ? "!" : "") + String.join(",", materials));
+        if (!entities.isEmpty()) parts.add("e:" + (entitiesNegated ? "!" : "") + String.join(",", entities));
+        if (keyword != null) parts.add("k:" + (keyword.contains(" ") ? "\"" + keyword + "\"" : keyword));
         if (world != null) parts.add("w:" + world);
         if (at != null) parts.add("at:" + at[0] + "," + at[1] + "," + at[2]);
         for (Flag f : flags) parts.add("#" + f.name().toLowerCase(java.util.Locale.ROOT));

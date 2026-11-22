@@ -100,6 +100,11 @@ public final class MainCommand {
                                                                 IntegerArgumentType.getInteger(c, "z")))))))))
                 .then(Commands.literal("status").requires(has("justlogs.status"))
                         .executes(c -> ready(c, (ctx, s) -> status(ctx, s))))
+                .then(Commands.literal("purge").requires(has("justlogs.purge"))
+                        .then(Commands.literal("confirm")
+                                .executes(c -> ready(c, (ctx, s) -> ctx.purge.confirm(s))))
+                        .then(Commands.argument("parameters", StringArgumentType.greedyString())
+                                .executes(c -> ready(c, (ctx, s) -> ctx.purge.start(s, StringArgumentType.getString(c, "parameters"))))))
                 .then(Commands.literal("reload").requires(has("justlogs.reload")).executes(this::reload));
         return root.build();
     }
@@ -124,11 +129,12 @@ public final class MainCommand {
             return Command.SINGLE_SUCCESS;
         }
         sender.sendMessage(m.get("help.header"));
-        for (String key : new String[] {"inspect", "lookup", "near", "page", "rollback", "restore", "undo", "confirm", "status", "reload"}) {
+        for (String key : new String[] {"inspect", "lookup", "near", "page", "rollback", "restore", "undo", "confirm", "purge", "status", "reload"}) {
             // Only the commands this sender may use
             String permission = switch (key) {
                 case "inspect" -> "justlogs.inspect";
                 case "status" -> "justlogs.status";
+                case "purge" -> "justlogs.purge";
                 case "reload" -> "justlogs.reload";
                 case "rollback", "undo", "confirm" -> "justlogs.rollback";
                 case "restore" -> "justlogs.restore";

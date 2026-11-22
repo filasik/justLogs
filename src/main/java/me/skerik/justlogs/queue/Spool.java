@@ -21,8 +21,14 @@ import java.util.stream.Stream;
 import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.Actor;
 import me.skerik.justlogs.model.BlockRecord;
+import me.skerik.justlogs.model.ChatRecord;
+import me.skerik.justlogs.model.CommandRecord;
 import me.skerik.justlogs.model.ContainerRecord;
+import me.skerik.justlogs.model.EntityRecord;
+import me.skerik.justlogs.model.InteractRecord;
+import me.skerik.justlogs.model.ItemRecord;
 import me.skerik.justlogs.model.SignRecord;
+import me.skerik.justlogs.model.SessionRecord;
 import me.skerik.justlogs.model.LogRecord;
 import org.jspecify.annotations.Nullable;
 
@@ -41,6 +47,12 @@ public final class Spool {
     private static final byte TYPE_BLOCK = 1;
     private static final byte TYPE_CONTAINER = 2;
     private static final byte TYPE_SIGN = 3;
+    private static final byte TYPE_CHAT = 4;
+    private static final byte TYPE_COMMAND = 5;
+    private static final byte TYPE_SESSION = 6;
+    private static final byte TYPE_INTERACT = 7;
+    private static final byte TYPE_ITEM = 8;
+    private static final byte TYPE_ENTITY = 9;
 
     public record Batch(Path file, List<LogRecord> records, long sizeBytes) {
     }
@@ -231,6 +243,43 @@ public final class Spool {
                 out.writeUTF(s.oldText());
                 out.writeUTF(s.newText());
             }
+            case ChatRecord ch -> {
+                out.writeByte(TYPE_CHAT);
+                writeCommon(out, ch);
+                out.writeUTF(ch.message());
+            }
+            case CommandRecord cm -> {
+                out.writeByte(TYPE_COMMAND);
+                writeCommon(out, cm);
+                out.writeUTF(cm.message());
+            }
+            case SessionRecord se -> {
+                out.writeByte(TYPE_SESSION);
+                writeCommon(out, se);
+                writeNullable(out, se.ipHash());
+                writeNullable(out, se.ip());
+            }
+            case InteractRecord in -> {
+                out.writeByte(TYPE_INTERACT);
+                writeCommon(out, in);
+                out.writeUTF(in.material());
+            }
+            case ItemRecord it -> {
+                out.writeByte(TYPE_ITEM);
+                writeCommon(out, it);
+                out.writeUTF(it.material());
+                out.writeInt(it.amount());
+                writeBytes(out, it.itemData());
+            }
+            case EntityRecord en -> {
+                out.writeByte(TYPE_ENTITY);
+                writeCommon(out, en);
+                out.writeUTF(en.entityType());
+                writeActor(out, en.victim());
+                out.writeInt(en.cause());
+                writeNullable(out, en.name());
+                writeNullable(out, en.detail());
+            }
         }
     }
 
@@ -267,8 +316,46 @@ public final class Spool {
                     in.readUTF(), in.readUTF(), in.readInt(), readBytes(in));
             case TYPE_SIGN -> new SignRecord(time, actor, action, world, x, y, z,
                     in.readInt(), in.readUTF(), in.readUTF());
+            case TYPE_CHAT -> new ChatRecord(time, actor, world, x, y, z, in.readUTF());
+            case TYPE_COMMAND -> new CommandRecord(time, actor, world, x, y, z, in.readUTF());
+            case TYPE_SESSION -> new SessionRecord(time, actor, action, world, x, y, z,
+                    readNullable(in), readNullable(in));
+            case TYPE_INTERACT -> new InteractRecord(time, actor, action, world, x, y, z, in.readUTF());
+            case TYPE_ITEM -> new ItemRecord(time, actor, action, world, x, y, z,
+                    in.readUTF(), in.readInt(), readBytes(in));
+            case TYPE_ENTITY -> new EntityRecord(time, actor, action, world, x, y, z,
+                    in.readUTF(), readActor(in), in.readInt(), readNullable(in), readNullable(in));
             default -> throw new IOException("unknown record type " + type);
         };
+    }
+
+    private static void writeNullable(DataOutputStream out, @Nullable String s) throws IOException {
+        if (s == null) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            out.writeUTF(s);
+        }
+    }
+
+    private static @Nullable String readNullable(DataInputStream in) throws IOException {
+        return in.readBoolean() ? in.readUTF() : null;
+    }
+
+    private static void writeActor(DataOutputStream out, @Nullable Actor a) throws IOException {
+        if (a == null) {
+            out.writeBoolean(false);
+        } else {
+            out.writeBoolean(true);
+            out.writeUTF(a.ident());
+            out.writeUTF(a.name());
+            out.writeBoolean(a.player());
+        }
+    }
+
+    private static @Nullable Actor readActor(DataInputStream in) throws IOException {
+        if (!in.readBoolean()) return null;
+        return new Actor(in.readUTF(), in.readUTF(), in.readBoolean());
     }
 
     private static void writeBytes(DataOutputStream out, byte @Nullable [] data) throws IOException {

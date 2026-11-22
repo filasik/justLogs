@@ -1,16 +1,11 @@
 package me.skerik.justlogs.storage;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.ContainerEntry;
 import me.skerik.justlogs.model.ContainerRecord;
@@ -37,8 +32,15 @@ public final class ContainerStore {
     static final String SELECT_WITH_DATA = COLUMNS + ", d.data" + FROM
             + " LEFT JOIN " + Migrations.table("item_data") + " d ON d.id = b.item_data_id";
 
-    /** hash (hex) -> id of the jl_item_data row; a cache only, the unique index is the truth. */
-    private final Map<String, Long> itemIds = new ConcurrentHashMap<>();
+    private final ItemDataStore itemDataStore;
+
+    public ContainerStore() {
+        this(new ItemDataStore());
+    }
+
+    ContainerStore(ItemDataStore itemDataStore) {
+        this.itemDataStore = itemDataStore;
+    }
 
     public void insert(Connection c, IdCache ids, List<ContainerRecord> rows) throws SQLException {
         if (rows.isEmpty()) return;
@@ -48,7 +50,7 @@ public final class ContainerStore {
             ContainerRecord r = rows.get(i);
             resolved[i] = new int[] {ids.user(c, r.actor(), r.time()), ids.world(c, r.world()),
                     ids.material(c, r.holderMaterial()), ids.material(c, r.material())};
-            itemData[i] = r.itemData() == null ? 0 : itemData(c, r.itemData(), resolved[i][3]);
+            itemData[i] = r.itemData() == null ? 0 : itemDataStore.intern(c, r.itemData(), resolved[i][3]);
         }
         Database.transaction(c, tx -> {
             try (PreparedStatement ps = tx.prepareStatement(INSERT)) {
@@ -73,50 +75,6 @@ public final class ContainerStore {
             }
             return null;
         });
-    }
-
-    /** Id of the (deduplicated) item data row; creates it when new. Autocommit, like the dictionaries. */
-    private long itemData(Connection c, byte[] data, int materialId) throws SQLException {
-        byte[] hash = sha1(data);
-        String key = java.util.HexFormat.of().formatHex(hash);
-        Long cached = itemIds.get(key);
-        if (cached != null) return cached;
-        long id = findItem(c, hash);
-        if (id == 0) {
-            try (PreparedStatement ps = c.prepareStatement("INSERT INTO " + Migrations.table("item_data")
-                    + " (hash, mat, data) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                ps.setBytes(1, hash);
-                ps.setInt(2, materialId);
-                ps.setBytes(3, data);
-                ps.executeUpdate();
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    id = keys.next() ? keys.getLong(1) : 0;
-                }
-            } catch (SQLException duplicate) {
-                id = findItem(c, hash); // another writer won the race on the unique hash
-                if (id == 0) throw duplicate;
-            }
-        }
-        if (itemIds.size() > 20_000) itemIds.clear();
-        itemIds.put(key, id);
-        return id;
-    }
-
-    private static long findItem(Connection c, byte[] hash) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("SELECT id FROM " + Migrations.table("item_data") + " WHERE hash = ?")) {
-            ps.setBytes(1, hash);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getLong(1) : 0;
-            }
-        }
-    }
-
-    private static byte[] sha1(byte[] data) {
-        try {
-            return MessageDigest.getInstance("SHA-1").digest(data);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e); // SHA-1 is part of every JRE
-        }
     }
 
     static List<ContainerEntry> read(ResultSet rs, int max) throws SQLException {
