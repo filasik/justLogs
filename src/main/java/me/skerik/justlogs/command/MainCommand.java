@@ -174,6 +174,8 @@ public final class MainCommand {
         sender.sendMessage(m.get("status.queue", Messages.text("size", String.valueOf(ctx.queue.size())),
                 Messages.text("limit", String.valueOf(ctx.queue.softLimit())),
                 Messages.text("dropped", String.valueOf(ctx.queue.dropped()))));
+        long spooled = ctx.writer.spooledCount();
+        if (spooled > 0) sender.sendMessage(m.get("status.spool", Messages.text("count", String.valueOf(spooled))));
         sender.sendMessage(m.get("status.writer",
                 Messages.text("rate", String.format("%.1f", ctx.writer.throughput().perSecond(now))),
                 Messages.text("ms", String.valueOf(ctx.writer.lastFlushMillis())),

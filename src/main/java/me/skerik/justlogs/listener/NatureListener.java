@@ -1,14 +1,18 @@
 package me.skerik.justlogs.listener;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import me.skerik.justlogs.Context;
 import me.skerik.justlogs.config.Settings;
 import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.Actor;
 import me.skerik.justlogs.model.BlockRecord;
 import me.skerik.justlogs.util.Keys;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
@@ -20,11 +24,22 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockFadeEvent;
+import org.bukkit.event.block.BlockFertilizeEvent;
+import org.bukkit.event.block.BlockFormEvent;
+import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.EntityBlockFormEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 
 /**
@@ -152,13 +167,169 @@ public final class NatureListener implements Listener {
     public void onEntityChange(EntityChangeBlockEvent event) {
         Settings.Logging cfg = ctx.settings().logging();
         Block block = event.getBlock();
-        // Falling blocks are a separate logger (planned); here only mobs and players that change a block
-        if (!cfg.entityChanges() || event.getEntity() instanceof FallingBlock || !cfg.worldLogged(block.getWorld().getName())) return;
+        if (!cfg.worldLogged(block.getWorld().getName())) return;
         Entity entity = event.getEntity();
+        if (entity instanceof FallingBlock fb) {
+            if (!cfg.fallingBlocks()) return;
+            BlockData before = block.getBlockData();
+            BlockData after = event.getBlockData();
+            Actor actor;
+            if (after.getMaterial().isAir()) {
+                // Block started falling: remember who broke a nearby block if any, else #fall
+                actor = causes.recentBreakOwner(block.getRelative(BlockFace.DOWN));
+                if (actor == null) actor = Actor.source("#fall");
+                causes.fall(fb.getUniqueId(), actor);
+            } else {
+                actor = causes.fallOwner(fb.getUniqueId());
+                if (actor == null) actor = Actor.source("#fall");
+            }
+            enqueue(actor, Action.FALL, block, before, Keys.material(after.getMaterial()), Keys.state(after));
+            return;
+        }
+        if (!cfg.entityChanges()) return;
         Actor actor = entity instanceof Player p ? player(p)
                 : Actor.source("#" + entity.getType().name().toLowerCase(Locale.ROOT));
         BlockData after = event.getBlockData();
         enqueue(actor, Action.ENTITY_CHANGE, block, block.getBlockData(), Keys.material(after.getMaterial()), Keys.state(after));
+    }
+
+    // ── fluids ─────────────────────────────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFromTo(BlockFromToEvent event) {
+        Block from = event.getBlock();
+        if (!from.isLiquid()) return;
+        Actor owner = causes.fluidOwner(from);
+        Block to = event.getToBlock();
+        if (owner != null) causes.fluid(to, owner);
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.fluids() || !cfg.worldLogged(to.getWorld().getName())) return;
+        // Only log when fluid replaces a non-air block of a different type (torches, redstone, crops, ...)
+        if (to.getType().isAir() || to.getType() == from.getType()) return;
+        Actor actor = owner != null ? owner : (from.getType() == Material.LAVA ? Actor.LAVA : Actor.WATER);
+        enqueue(actor, Action.FLOW, to, to.getBlockData(), Keys.material(from.getType()), "");
+    }
+
+    // ── pistons ────────────────────────────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.pistons() || event.getBlocks().isEmpty() || !cfg.worldLogged(event.getBlock().getWorld().getName())) return;
+        logPistonMove(event.getBlocks(), event.getDirection());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.pistons() || event.getBlocks().isEmpty() || !cfg.worldLogged(event.getBlock().getWorld().getName())) return;
+        logPistonMove(event.getBlocks(), event.getDirection());
+    }
+
+    private void logPistonMove(List<Block> moved, BlockFace dir) {
+        Actor actor = Actor.source("#piston");
+        Set<Block> movedSet = new HashSet<>(moved);
+        BlockFace back = dir.getOppositeFace();
+        for (Block b : moved) {
+            Block dest = b.getRelative(dir);
+            enqueue(actor, Action.PISTON, dest, dest.getBlockData(), Keys.material(b.getType()), Keys.state(b.getBlockData()));
+            if (!movedSet.contains(b.getRelative(back))) {
+                enqueue(actor, Action.PISTON, b, b.getBlockData(), "air", "");
+            }
+        }
+    }
+
+    // ── form, fade, spread, crop growth ────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onForm(BlockFormEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        Block block = event.getBlock();
+        if (!cfg.formFade() || !cfg.worldLogged(block.getWorld().getName())) return;
+        Actor actor = Actor.source("#nature");
+        if (event instanceof EntityBlockFormEvent ebf) {
+            Entity entity = ebf.getEntity();
+            actor = entity instanceof Player p ? player(p)
+                    : Actor.source("#" + entity.getType().name().toLowerCase(Locale.ROOT));
+        }
+        BlockData before = block.getBlockData();
+        BlockData after = event.getNewState().getBlockData();
+        if (before.equals(after)) return;
+        enqueue(actor, Action.FORM, block, before, Keys.material(after.getMaterial()), Keys.state(after));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFade(BlockFadeEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        Block block = event.getBlock();
+        if (!cfg.formFade() || !cfg.worldLogged(block.getWorld().getName())) return;
+        Material type = block.getType();
+        if (type == Material.FIRE || type == Material.SOUL_FIRE) return;
+        BlockData after = event.getNewState().getBlockData();
+        enqueue(Actor.source("#nature"), Action.FADE, block, block.getBlockData(),
+                Keys.material(after.getMaterial()), Keys.state(after));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSpread(BlockSpreadEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        Block block = event.getBlock();
+        if (!cfg.formFade() || !cfg.worldLogged(block.getWorld().getName())) return;
+        BlockData after = event.getNewState().getBlockData();
+        enqueue(Actor.source("#nature"), Action.SPREAD, block, block.getBlockData(),
+                Keys.material(after.getMaterial()), Keys.state(after));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockGrow(BlockGrowEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        Block block = event.getBlock();
+        if (!cfg.cropGrowth() || !cfg.worldLogged(block.getWorld().getName())) return;
+        BlockData after = event.getNewState().getBlockData();
+        enqueue(Actor.source("#nature"), Action.GROW, block, block.getBlockData(),
+                Keys.material(after.getMaterial()), Keys.state(after));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFertilize(BlockFertilizeEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.growth() || !cfg.worldLogged(event.getBlock().getWorld().getName())) return;
+        Actor actor = event.getPlayer() != null ? player(event.getPlayer()) : Actor.source("#nature");
+        for (BlockState state : event.getBlocks()) {
+            Block block = state.getBlock();
+            BlockData before = block.getBlockData();
+            BlockData after = state.getBlockData();
+            if (before.equals(after)) continue;
+            enqueue(actor, Action.GROW, block, before, Keys.material(after.getMaterial()), Keys.state(after));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSpongeAbsorb(SpongeAbsorbEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.formFade() || !cfg.worldLogged(event.getBlock().getWorld().getName())) return;
+        Actor actor = Actor.source("#sponge");
+        for (BlockState state : event.getBlocks()) {
+            Block block = state.getBlock();
+            BlockData before = block.getBlockData();
+            BlockData after = state.getBlockData();
+            if (before.equals(after)) continue;
+            enqueue(actor, Action.FADE, block, before, Keys.material(after.getMaterial()), Keys.state(after));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPortalCreate(PortalCreateEvent event) {
+        Settings.Logging cfg = ctx.settings().logging();
+        if (!cfg.formFade() || !cfg.worldLogged(event.getWorld().getName())) return;
+        Actor actor = event.getEntity() instanceof Player p ? player(p) : Actor.source("#portal");
+        for (BlockState state : event.getBlocks()) {
+            Block block = state.getBlock();
+            BlockData before = block.getBlockData();
+            BlockData after = state.getBlockData();
+            if (before.equals(after)) continue;
+            enqueue(actor, Action.FORM, block, before, Keys.material(after.getMaterial()), Keys.state(after));
+        }
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────────

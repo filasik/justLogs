@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 - 2026-11-22
+- Extended natural-cause logging: fluid flow (`FLOW`, attributed to the player who poured the bucket when known), falling blocks (`FALL`), piston extend/retract (`PISTON`, off by default), block form/fade/spread/sponge/portals (`FORM`, `FADE`, `SPREAD`), crop growth (`crop-growth`, off by default), bone meal fertilization, and attached blocks popped by breaking a support block (`BlockDestroyEvent`).
+- Added disk overflow `Spool` (`plugins/JustLogs/spool/`): unsaved log batches are written safely to disk during database outages or shutdown timeouts and replayed in order once the database is back; `/jo status` shows spooled record counts when present.
+- Config-version 5: added `logging.fluids`, `logging.falling-blocks`, `logging.pistons`, `logging.form-fade`, and `logging.crop-growth` (existing configs are updated automatically).
+
 ## 0.2.1 - 2026-11-17
 - Fixed the [download] button in the "new version available" message (the link was shown as raw text).
 

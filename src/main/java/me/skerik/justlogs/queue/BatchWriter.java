@@ -36,6 +36,7 @@ public final class BatchWriter {
     private final IdCache ids;
     private final BlockStore blocks;
     private final ContainerStore containers = new ContainerStore();
+    private final @Nullable Spool spool;
     private final Logger log;
     private final Throughput throughput = new Throughput();
     private final ConcurrentLinkedQueue<Waiter> waiters = new ConcurrentLinkedQueue<>();
@@ -50,10 +51,16 @@ public final class BatchWriter {
 
     public BatchWriter(LogQueue queue, Database db, IdCache ids, BlockStore blocks, int flushIntervalMs, int batchSize,
                        Logger log) {
+        this(queue, db, ids, blocks, null, flushIntervalMs, batchSize, log);
+    }
+
+    public BatchWriter(LogQueue queue, Database db, IdCache ids, BlockStore blocks, @Nullable Spool spool,
+                       int flushIntervalMs, int batchSize, Logger log) {
         this.queue = queue;
         this.db = db;
         this.ids = ids;
         this.blocks = blocks;
+        this.spool = spool;
         this.flushIntervalMs = flushIntervalMs;
         this.batchSize = batchSize;
         this.log = log;
@@ -105,10 +112,22 @@ public final class BatchWriter {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        if (t.isAlive()) t.interrupt();
+        if (t.isAlive()) {
+            t.interrupt();
+            try {
+                t.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         thread = null;
+        if (drain && spool != null) drainQueueToSpool();
         failWaiters();
         return queue.size();
+    }
+
+    public long spooledCount() {
+        return spool == null ? 0 : spool.pendingCount();
     }
 
     public Throughput throughput() {
@@ -140,8 +159,15 @@ public final class BatchWriter {
         long backoffMs = 1000;
         try {
             while (running || (drainOnStop && (!pending.isEmpty() || queue.size() > 0))) {
-                if (pending.isEmpty()) queue.drainTo(pending, batchSize);
+                Spool.Batch spooled = null;
                 if (pending.isEmpty()) {
+                    if (spool != null && spool.hasPending()) {
+                        spooled = spool.peek().orElse(null);
+                    }
+                    if (spooled == null) queue.drainTo(pending, batchSize);
+                }
+                List<LogRecord> batch = spooled != null ? spooled.records() : pending;
+                if (batch.isEmpty()) {
                     completeWaiters();
                     if (!running) break;
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(flushIntervalMs));
@@ -153,29 +179,53 @@ public final class BatchWriter {
                         ids.preload(conn);
                     }
                     long started = System.nanoTime();
-                    write(conn, pending);
+                    write(conn, batch);
                     long now = System.currentTimeMillis();
-                    throughput.record(pending.size(), now);
+                    throughput.record(batch.size(), now);
                     lastFlushMillis = (System.nanoTime() - started) / 1_000_000;
-                    written.addAndGet(pending.size());
-                    pending.clear();
+                    if (spooled != null) {
+                        spool.ack(spooled);
+                        written.addAndGet(batch.size());
+                    } else {
+                        written.addAndGet(pending.size());
+                        pending.clear();
+                    }
                     lastError = null;
                     backoffMs = 1000;
                     completeWaiters();
                 } catch (SQLException | RuntimeException e) {
                     lastError = String.valueOf(e.getMessage());
-                    log.log(Level.WARNING, "Cannot write " + pending.size() + " log records, retrying in "
+                    log.log(Level.WARNING, "Cannot write " + batch.size() + " log records, retrying in "
                             + backoffMs / 1000 + " s (" + e.getMessage() + ")");
                     closeQuietly(conn);
                     conn = null;
-                    if (!running && drainOnStop) break; // shutting down against a dead database: give up
+                    if (spool != null) {
+                        if (spooled == null && !pending.isEmpty() && spool.write(pending)) {
+                            pending.clear();
+                        }
+                        drainQueueToSpool();
+                    }
+                    if (!running && drainOnStop) break; // shutting down against a dead database: spooled or give up
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(backoffMs));
                     backoffMs = Math.min(60_000, backoffMs * 2);
                 }
                 if (Thread.currentThread().isInterrupted()) break;
             }
         } finally {
+            if (drainOnStop && spool != null && !pending.isEmpty() && spool.write(pending)) {
+                pending.clear();
+            }
             closeQuietly(conn);
+        }
+    }
+
+    private void drainQueueToSpool() {
+        if (spool == null) return;
+        List<LogRecord> buf = new ArrayList<>(batchSize);
+        while (queue.drainTo(buf, batchSize) > 0) {
+            boolean ok = spool.write(buf);
+            buf.clear();
+            if (!ok) break;
         }
     }
 

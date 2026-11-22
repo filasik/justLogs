@@ -7,7 +7,7 @@
 # Config format version. Do not change: when you update the plugin, options that are new in the
 # newer version are added to this file automatically (your values stay, a backup is saved first).
 # (Developer: raise this number whenever you add a key, and add the key with its comment here.)
-config-version: 4
+config-version: 5
 
 # Language of all player-facing messages: en, cs.
 # The files plugins/JustLogs/messages_<locale>.yml are yours to edit; missing keys fall back to the built-in text.
@@ -39,8 +39,18 @@ logging:
   fire: true
   # Explosions of TNT, creepers, beds, ...; TNT is attributed to the player who lit it (else #tnt)
   explosions: true
+  # Water and lava flowing over other blocks (attributed to who poured the bucket, else #water / #lava)
+  fluids: true
+  # Sand, gravel, concrete powder and anvils falling and landing
+  falling-blocks: true
+  # Blocks pushed or pulled by pistons (noisy, off by default)
+  pistons: false
+  # Ice, cobblestone, obsidian, concrete, portals, sponge absorption, grass/mushroom spread and melting/fading
+  form-fade: true
   # Trees and mushrooms growing (bone meal player, else #nature)
   growth: true
+  # Crops, cactus, sugar cane, bamboo and kelp growing naturally (noisy, off by default)
+  crop-growth: false
   # Leaves rotting away (very noisy, off by default)
   leaf-decay: false
   # Endermen, farmland trampling, silverfish and other mobs changing blocks

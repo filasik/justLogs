@@ -21,8 +21,9 @@ public record Settings(
 
     /** Which loggers are on. {@code worldsBlacklist} holds exact world names. */
     public record Logging(boolean blockPlace, boolean blockBreak, boolean buckets, boolean fire, boolean explosions,
-                          boolean growth, boolean leafDecay, boolean entityChanges, boolean containers,
-                          Set<String> worldsBlacklist) {
+                          boolean fluids, boolean fallingBlocks, boolean pistons, boolean formFade,
+                          boolean growth, boolean cropGrowth, boolean leafDecay, boolean entityChanges,
+                          boolean containers, Set<String> worldsBlacklist) {
 
         public boolean worldLogged(String world) {
             return !worldsBlacklist.contains(world);
@@ -60,9 +61,11 @@ public record Settings(
                 c.getString("server-name", "").strip(),
                 new Logging(c.getBoolean("logging.block-place", true), c.getBoolean("logging.block-break", true),
                         c.getBoolean("logging.buckets", true), c.getBoolean("logging.fire", true),
-                        c.getBoolean("logging.explosions", true), c.getBoolean("logging.growth", true),
-                        c.getBoolean("logging.leaf-decay", false), c.getBoolean("logging.entity-changes", true),
-                        c.getBoolean("logging.containers", true),
+                        c.getBoolean("logging.explosions", true), c.getBoolean("logging.fluids", true),
+                        c.getBoolean("logging.falling-blocks", true), c.getBoolean("logging.pistons", false),
+                        c.getBoolean("logging.form-fade", true), c.getBoolean("logging.growth", true),
+                        c.getBoolean("logging.crop-growth", false), c.getBoolean("logging.leaf-decay", false),
+                        c.getBoolean("logging.entity-changes", true), c.getBoolean("logging.containers", true),
                         new HashSet<>(c.getStringList("logging.worlds-blacklist"))),
                 new Queue(bounded(c, "queue.flush-interval-ms", 50, 10_000, 250, log),
                         bounded(c, "queue.batch-size", 100, 50_000, 2000, log),

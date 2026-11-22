@@ -88,6 +88,7 @@ status:
   header: '<prefix> <gray>JustLogs <white>v<version></white>'
   database: '  <gray>Database: <white><type></white>, schema v<white><schema></white>'
   queue: '  <gray>Queue: <white><size></white> waiting (limit <white><limit></white>), <white><dropped></white> dropped'
+  spool: '  <gray>Spool: <yellow><count></yellow> records waiting on disk'
   writer: '  <gray>Writer: <white><rate></white> rows/s, last flush <white><ms></white> ms, <white><written></white> rows written since start'
   writer-error: '  <red>Writer problem: <white><error></white>'
   rollback: '  <gray>Rollback: <white><state></white>, waiting for confirmation: <white><pending></white>'

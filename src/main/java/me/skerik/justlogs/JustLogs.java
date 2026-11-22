@@ -19,6 +19,7 @@ import me.skerik.justlogs.listener.NatureListener;
 import me.skerik.justlogs.listener.PlayerBlockListener;
 import me.skerik.justlogs.queue.BatchWriter;
 import me.skerik.justlogs.queue.LogQueue;
+import me.skerik.justlogs.queue.Spool;
 import me.skerik.justlogs.storage.BlockStore;
 import me.skerik.justlogs.storage.Database;
 import me.skerik.justlogs.storage.IdCache;
@@ -97,8 +98,9 @@ public final class JustLogs extends JavaPlugin implements Listener {
             ids = cache;
             LogQueue q = new LogQueue(settings.queue().maxSize());
             queue = q;
-            BatchWriter w = new BatchWriter(q, db, cache, new BlockStore(), settings.queue().flushIntervalMs(),
-                    settings.queue().batchSize(), getLogger());
+            Spool spool = new Spool(getDataFolder().toPath().resolve("spool"), getLogger());
+            BatchWriter w = new BatchWriter(q, db, cache, new BlockStore(), spool,
+                    settings.queue().flushIntervalMs(), settings.queue().batchSize(), getLogger());
             w.start();
             writer = w;
             scheduler.runGlobal(this::finishStartup);
@@ -118,8 +120,8 @@ public final class JustLogs extends JavaPlugin implements Listener {
         Context ctx = new Context(this, scheduler, settings, messages, database, ids, queue, writer, secrets, schemaVersion);
         context = ctx;
 
-        getServer().getPluginManager().registerEvents(new PlayerBlockListener(ctx), this);
         CauseTracker causes = new CauseTracker();
+        getServer().getPluginManager().registerEvents(new PlayerBlockListener(ctx, causes), this);
         getServer().getPluginManager().registerEvents(new ContainerListener(ctx), this);
         getServer().getPluginManager().registerEvents(new NatureListener(ctx, causes), this);
         timers.add(scheduler.runAsyncTimer(causes::expire, 20L * 30, 20L * 30));

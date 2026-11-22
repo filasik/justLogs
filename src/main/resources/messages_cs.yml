@@ -88,6 +88,7 @@ status:
   header: '<prefix> <gray>JustLogs <white>v<version></white>'
   database: '  <gray>Databáze: <white><type></white>, schéma v<white><schema></white>'
   queue: '  <gray>Fronta: <white><size></white> čeká (limit <white><limit></white>), <white><dropped></white> zahozeno'
+  spool: '  <gray>Odklad na disk: <yellow><count></yellow> záznamů čeká na zápis'
   writer: '  <gray>Zápis: <white><rate></white> řádků/s, poslední zápis <white><ms></white> ms, <white><written></white> řádků od startu'
   writer-error: '  <red>Problém se zápisem: <white><error></white>'
   rollback: '  <gray>Rollback: <white><state></white>, čeká na potvrzení: <white><pending></white>'
