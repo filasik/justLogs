@@ -8,6 +8,7 @@ import java.util.List;
 import me.skerik.justlogs.config.Messages;
 import me.skerik.justlogs.model.BlockEntry;
 import me.skerik.justlogs.model.ContainerEntry;
+import me.skerik.justlogs.model.SignEntry;
 import me.skerik.justlogs.model.LogEntry;
 import me.skerik.justlogs.util.Durations;
 import me.skerik.justlogs.util.Keys;
@@ -50,6 +51,8 @@ final class LookupRenderer {
             case ContainerEntry c -> m.get("action." + e.action().key(), Messages.text("amount", String.valueOf(c.amount())),
                     Messages.text("item", Keys.pretty(c.material())), Messages.text("holder", Keys.pretty(c.holderMaterial())),
                     Messages.text("data", c.hasData() ? "*" : ""));
+            case SignEntry s -> m.get("action." + e.action().key(), Messages.text("text", oneLine(s.newText())),
+                    Messages.text("side", m.raw(s.side() == 1 ? "sign.back" : "sign.front")));
         };
         Component pos = m.get("lookup.pos", Messages.text("x", String.valueOf(e.x())), Messages.text("y", String.valueOf(e.y())),
                 Messages.text("z", String.valueOf(e.z())), Messages.text("world", e.world()),
@@ -65,11 +68,20 @@ final class LookupRenderer {
                     Messages.text("holder", c.holderMaterial()), Messages.text("item", c.material()),
                     Messages.text("data", c.hasData() ? "yes" : "no"));
         }
+        if (entry instanceof SignEntry s) {
+            return m.get("lookup.row-verbose-sign", Messages.text("id", String.valueOf(s.id())),
+                    Messages.text("time", TIME.format(Instant.ofEpochSecond(s.time()))),
+                    Messages.text("old", oneLine(s.oldText())), Messages.text("new", oneLine(s.newText())));
+        }
         BlockEntry e = (BlockEntry) entry;
         return m.get("lookup.row-verbose", Messages.text("id", String.valueOf(e.id())),
                 Messages.text("time", TIME.format(Instant.ofEpochSecond(e.time()))),
                 Messages.text("old_state", state(e.oldMaterial(), e.oldData())),
                 Messages.text("new_state", state(e.newMaterial(), e.newData())));
+    }
+
+    private static String oneLine(String text) {
+        return text.isBlank() ? "-" : text.strip().replace("\n", " | ");
     }
 
     private static String state(String material, String data) {

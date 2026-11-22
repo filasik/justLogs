@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 - 2026-11-22
+- Sign logging: every text edit of a sign (front or back side) is recorded with the old and new text. Look it up with `a:sign` (for example `/jo lookup a:sign r:20 t:1d`) or `#verbose` for the old text. Signs are not part of rollback yet.
+- New `logging.signs` switch (config-version 6, existing configs are updated automatically).
+
 ## 0.2.2 - 2026-11-22
 - Extended natural-cause logging: fluid flow (`FLOW`, attributed to the player who poured the bucket when known), falling blocks (`FALL`), piston extend/retract (`PISTON`, off by default), block form/fade/spread/sponge/portals (`FORM`, `FADE`, `SPREAD`), crop growth (`crop-growth`, off by default), bone meal fertilization, and attached blocks popped by breaking a support block (`BlockDestroyEvent`).
 - Added disk overflow `Spool` (`plugins/JustLogs/spool/`): unsaved log batches are written safely to disk during database outages or shutdown timeouts and replayed in order once the database is back; `/jo status` shows spooled record counts when present.

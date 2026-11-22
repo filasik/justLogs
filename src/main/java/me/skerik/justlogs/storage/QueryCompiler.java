@@ -50,12 +50,17 @@ public final class QueryCompiler {
     /** Which table a query reads: container actions only (a:container, a:deposit...) go to jl_container, the rest to jl_block. */
     public static Category categoryOf(LogQuery q) {
         if (q.actions().isEmpty()) return Category.BLOCK;
-        for (Action a : q.actions()) if (a.category() != Category.CONTAINER) return Category.BLOCK;
-        return Category.CONTAINER;
+        boolean allContainer = true;
+        boolean allSign = true;
+        for (Action a : q.actions()) {
+            if (a.category() != Category.CONTAINER) allContainer = false;
+            if (a.category() != Category.SIGN) allSign = false;
+        }
+        return allContainer ? Category.CONTAINER : allSign ? Category.SIGN : Category.BLOCK;
     }
 
     private static String table(Category cat) {
-        return Migrations.table(cat == Category.CONTAINER ? "container" : "block");
+        return Migrations.table(cat == Category.CONTAINER ? "container" : cat == Category.SIGN ? "sign" : "block");
     }
 
     private final IdCache ids;
@@ -70,13 +75,14 @@ public final class QueryCompiler {
         Category cat = categoryOf(query);
         Where where = where(c, query, origin, cursor, cat);
         if (where == null) return new Page(List.of(), null);
-        String sql = (cat == Category.CONTAINER ? ContainerStore.SELECT : BlockStore.SELECT) + where.sql
+        String sql = (cat == Category.CONTAINER ? ContainerStore.SELECT : cat == Category.SIGN ? SignStore.SELECT
+                : BlockStore.SELECT) + where.sql
                 + " ORDER BY b.time DESC, b.id DESC LIMIT " + (limit + 1);
         try (PreparedStatement ps = c.prepareStatement(sql)) {
             bind(ps, where.params);
             try (ResultSet rs = ps.executeQuery()) {
-                List<LogEntry> rows = new ArrayList<>(cat == Category.CONTAINER
-                        ? ContainerStore.read(rs, limit + 1) : BlockStore.read(rs, limit + 1));
+                List<LogEntry> rows = new ArrayList<>(cat == Category.CONTAINER ? ContainerStore.read(rs, limit + 1)
+                        : cat == Category.SIGN ? SignStore.read(rs, limit + 1) : BlockStore.read(rs, limit + 1));
                 if (rows.size() > limit) {
                     rows = new ArrayList<>(rows.subList(0, limit));
                     LogEntry last = rows.get(rows.size() - 1);
@@ -163,6 +169,7 @@ public final class QueryCompiler {
         }
 
         if (!q.materials().isEmpty()) {
+            if (cat == Category.SIGN) return null; // signs have no material filter
             List<Integer> matIds = ids.findMaterials(c, q.materials());
             if (matIds.isEmpty()) {
                 if (!q.materialsNegated()) return null;

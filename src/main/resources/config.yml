@@ -7,7 +7,7 @@
 # Config format version. Do not change: when you update the plugin, options that are new in the
 # newer version are added to this file automatically (your values stay, a backup is saved first).
 # (Developer: raise this number whenever you add a key, and add the key with its comment here.)
-config-version: 5
+config-version: 6
 
 # Language of all player-facing messages: en, cs.
 # The files plugins/JustLogs/messages_<locale>.yml are yours to edit; missing keys fall back to the built-in text.
@@ -58,6 +58,8 @@ logging:
   # Items put into and taken out of chests, barrels, shulker boxes, hoppers, furnaces, ... (a:container). Broken chests also
   # keep their contents so a rollback can put them back.
   containers: true
+  # Sign text edits (who wrote what on which side). Look up with a:sign. Not part of rollback yet.
+  signs: true
   # Worlds that are never logged (exact names)
   worlds-blacklist: []
 

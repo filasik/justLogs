@@ -48,6 +48,7 @@ lookup:
   count: '<prefix> <gray><white><count></white> odpovídajících záznamů pro <white><query></white>.'
   row: '<gray>před <ago> <dark_gray>· <user> <dark_gray>· <action> <dark_gray>· <pos>'
   row-verbose-container: '<dark_gray>  #<id> <time> <holder> <item> (data itemu: <data>)'
+  row-verbose-sign: '<dark_gray>  #<id> <time> <old> -> <new>'
   row-verbose: '<dark_gray>  #<id> <time> <old_state> -> <new_state>'
   pos: '<click:run_command:''/justlogs tp <world> <x> <y> <z>''><hover:show_text:''<tooltip>''><aqua>(<x>, <y>, <z>)</aqua></hover></click>'
   pos-hover: '<gray>Teleport do <white><world></white>'
@@ -82,7 +83,12 @@ action:
   dispense: '<green>vystřelil</green> <white><new></white>'
   deposit: '<green>vložil</green> <white><amount>x <item><data></white> <gray>do <holder>'
   withdraw: '<red>vzal</red> <white><amount>x <item><data></white> <gray>z <holder>'
+  sign-edit: '<yellow>napsal na cedulku</yellow> <gray>(<side>)</gray> <white><text></white>'
   worldedit: '<light_purple>upravil</light_purple> <white><new></white>'
+
+sign:
+  front: 'přední'
+  back: 'zadní'
 
 status:
   header: '<prefix> <gray>JustLogs <white>v<version></white>'

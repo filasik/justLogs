@@ -13,6 +13,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.skerik.justlogs.model.BlockRecord;
 import me.skerik.justlogs.model.ContainerRecord;
+import me.skerik.justlogs.model.SignRecord;
+import me.skerik.justlogs.storage.SignStore;
 import me.skerik.justlogs.model.LogRecord;
 import me.skerik.justlogs.storage.BlockStore;
 import me.skerik.justlogs.storage.ContainerStore;
@@ -36,6 +38,7 @@ public final class BatchWriter {
     private final IdCache ids;
     private final BlockStore blocks;
     private final ContainerStore containers = new ContainerStore();
+    private final SignStore signs = new SignStore();
     private final @Nullable Spool spool;
     private final Logger log;
     private final Throughput throughput = new Throughput();
@@ -232,12 +235,15 @@ public final class BatchWriter {
     private void write(Connection conn, List<LogRecord> batch) throws SQLException {
         List<BlockRecord> blockRows = new ArrayList<>(batch.size());
         List<ContainerRecord> containerRows = new ArrayList<>();
+        List<SignRecord> signRows = new ArrayList<>();
         for (LogRecord r : batch) {
             if (r instanceof BlockRecord b) blockRows.add(b);
             else if (r instanceof ContainerRecord cr) containerRows.add(cr);
+            else if (r instanceof SignRecord sr) signRows.add(sr);
         }
         blocks.insert(conn, ids, blockRows);
         containers.insert(conn, ids, containerRows);
+        signs.insert(conn, ids, signRows);
     }
 
     private void completeWaiters() {

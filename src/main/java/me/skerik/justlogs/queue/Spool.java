@@ -22,6 +22,7 @@ import me.skerik.justlogs.model.Action;
 import me.skerik.justlogs.model.Actor;
 import me.skerik.justlogs.model.BlockRecord;
 import me.skerik.justlogs.model.ContainerRecord;
+import me.skerik.justlogs.model.SignRecord;
 import me.skerik.justlogs.model.LogRecord;
 import org.jspecify.annotations.Nullable;
 
@@ -39,6 +40,7 @@ public final class Spool {
     private static final int VERSION = 1;
     private static final byte TYPE_BLOCK = 1;
     private static final byte TYPE_CONTAINER = 2;
+    private static final byte TYPE_SIGN = 3;
 
     public record Batch(Path file, List<LogRecord> records, long sizeBytes) {
     }
@@ -222,6 +224,13 @@ public final class Spool {
                 out.writeInt(c.amount());
                 writeBytes(out, c.itemData());
             }
+            case SignRecord s -> {
+                out.writeByte(TYPE_SIGN);
+                writeCommon(out, s);
+                out.writeInt(s.side());
+                out.writeUTF(s.oldText());
+                out.writeUTF(s.newText());
+            }
         }
     }
 
@@ -256,6 +265,8 @@ public final class Spool {
                     in.readUTF(), in.readUTF(), in.readUTF(), in.readUTF(), readBytes(in));
             case TYPE_CONTAINER -> new ContainerRecord(time, actor, action, world, x, y, z,
                     in.readUTF(), in.readUTF(), in.readInt(), readBytes(in));
+            case TYPE_SIGN -> new SignRecord(time, actor, action, world, x, y, z,
+                    in.readInt(), in.readUTF(), in.readUTF());
             default -> throw new IOException("unknown record type " + type);
         };
     }

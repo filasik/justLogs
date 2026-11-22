@@ -17,6 +17,7 @@ import me.skerik.justlogs.listener.CauseTracker;
 import me.skerik.justlogs.listener.ContainerListener;
 import me.skerik.justlogs.listener.NatureListener;
 import me.skerik.justlogs.listener.PlayerBlockListener;
+import me.skerik.justlogs.listener.SignListener;
 import me.skerik.justlogs.queue.BatchWriter;
 import me.skerik.justlogs.queue.LogQueue;
 import me.skerik.justlogs.queue.Spool;
@@ -123,6 +124,7 @@ public final class JustLogs extends JavaPlugin implements Listener {
         CauseTracker causes = new CauseTracker();
         getServer().getPluginManager().registerEvents(new PlayerBlockListener(ctx, causes), this);
         getServer().getPluginManager().registerEvents(new ContainerListener(ctx), this);
+        getServer().getPluginManager().registerEvents(new SignListener(ctx), this);
         getServer().getPluginManager().registerEvents(new NatureListener(ctx, causes), this);
         timers.add(scheduler.runAsyncTimer(causes::expire, 20L * 30, 20L * 30));
         getServer().getPluginManager().registerEvents(new InspectListener(ctx), this);
