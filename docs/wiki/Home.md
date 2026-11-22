@@ -2,11 +2,13 @@
 
 **JustLogs** is a block and container logging plugin for Paper servers. It records who broke, placed, burned, blew up or took what, lets staff look it up in game, and puts it back with a rollback.
 
-- **Logs** blocks placed and broken by players, water and lava buckets, fire, explosions, tree growth, mobs changing blocks, and items put into or taken out of containers.
-- **Attributes indirect damage** to the player behind it: the player who lit the fire or the TNT, not just "fire" or "tnt".
+- **Logs** blocks (player, fire, explosions, fluids, falling blocks, pistons, growth, mob changes), containers, sign edits, chat, commands (with password redaction), sessions (HMAC-hashed IP), interactions, item drops/pickups/crafts, and entity kills/deaths/hanging/vehicles.
+- **Attributes indirect damage** to the player behind it: the player who lit the fire or the TNT, or poured the bucket.
 - **Inspector**: click a block or a chest to see its history.
-- **Lookup** with a short query language (`u:Notch t:2d r:20 a:-block`), clickable coordinates and paging.
+- **Lookup** with a short query language (`u:Notch t:2d r:20 a:-block k:"hello" e:creeper`), multi-category keyset paging, and clickable coordinates.
 - **Rollback, restore and undo** by player, area and time, with a private preview (ghost blocks) and a confirmation step for big changes. Rollbacks run chunk by chunk within a per-tick time budget, so the server doesn't freeze.
+- **Purge & retention**: `/jo purge` with confirmation, orphaned attachment cleanup, and optional automatic retention.
+- **Disk overflow spool**: unsaved batches are written safely to `plugins/JustLogs/spool/` during database outages and replayed once the database is back.
 - **Storage**: SQLite out of the box, or MariaDB/MySQL to share one database between several servers.
 - **Fast**: records are queued in memory and written in batches by one background thread.
 - **Languages**: English and Czech, every message editable (MiniMessage).

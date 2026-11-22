@@ -26,10 +26,19 @@ In game, `/jo help params` shows a short version of this page.
 | | `a:+block` | Blocks added (place, ignite, grow, pour, ...) |
 | | `a:-block` | Blocks removed (break, burn, explode, decay, scoop up, ...) |
 | | `a:container` | Container item moves (`+container` = put in, `-container` = taken out) |
+| | `a:sign` | Sign text edits |
+| | `a:chat` | Player chat messages |
+| | `a:command` | Executed commands |
+| | `a:session` | Player logins and logouts (`+session` = login, `-session` = logout) |
+| | `a:click` | Block interactions (doors, buttons, levers, pressure plates) |
+| | `a:item` | Dropped, picked up and crafted items (`drop`, `pickup`, `craft`) |
+| | `a:entity` | Entity kills, deaths, hanging, vehicles, tame, shear, leash |
 | | `a:break,explode` | Single actions (see the [list](#actions)) |
 | `b:` block or item | `b:diamond_ore` | A block or item type. The `minecraft:` prefix is optional. |
 | | `b:!stone,dirt` | Everything **except** these |
 | | `b:#logs` | A Minecraft block or item tag (block tags are tried first) |
+| `e:` entity | `e:creeper` | Entity type (`e:!villager` excludes) |
+| `k:` keyword | `k:diamond` | Text search in chat, commands and signs (`k:"hello world"` for phrases) |
 | `w:` world | `w:world_nether` | Only this world |
 | `at:` position | `at:100,64,-200` | Centre of `r:` instead of your own position (useful from the console) |
 
@@ -50,9 +59,9 @@ In game, `/jo help params` shows a short version of this page.
 ### Lookups
 
 - **No `t:`** → `lookup.default-time` (3 days).
-- **No scope at all** (no `u:`, `r:`, `b:`, `w:` or `at:`) → a player gets `r:<lookup.default-radius>` (10) around them. The console gets an error and must say what to search.
+- **No scope at all** (no `u:`, `r:`, `b:`, `e:`, `k:`, `w:` or `at:`) → a player gets `r:<lookup.default-radius>` (10) around them. The console gets an error and must say what to search.
 - **`r:` larger than `lookup.max-radius`** (100) or `r:#global` → needs `justlogs.lookup.global`.
-- **`a:container`** and the other container actions → need `justlogs.lookup.container`.
+- **Category permissions** → `a:container` needs `justlogs.lookup.container`; `chat`, `command`, `session`, `entity`, `item` and `click` each need `justlogs.lookup.<category>`.
 
 ### Rollback and restore
 
@@ -72,15 +81,26 @@ Actions that JustLogs logs today:
 | `ignite` | `+block` | Fire started |
 | `burn` | `-block` | Block burned away |
 | `explode` | `-block` | Block destroyed by an explosion |
-| `grow` | `+block` | Tree or huge mushroom grew |
+| `grow` | `+block` | Tree, mushroom or crop grew |
+| `flow` | `+block` | Water or lava flowed over a block |
+| `fall` | `block` | Sand, gravel, concrete powder or anvil fell |
+| `piston` | `block` | Piston extended or retracted (only with `logging.pistons`) |
+| `form` / `fade` / `spread` | `block` | Block formed, melted/faded or spread |
 | `decay` | `-block` | Leaves decayed (only with `logging.leaf-decay`) |
 | `entity-change` | `block` | A mob (or a player trampling farmland, etc.) changed a block |
-| `deposit` | `+container` | Items put into a container |
-| `withdraw` | `-container` | Items taken out of a container |
+| `deposit` / `withdraw` | `container` | Items put into or taken out of a container |
+| `sign-edit` | `sign` | Sign text edited (front or back) |
+| `chat` | `chat` | Player chat message |
+| `command` | `command` | Player command (auth commands redacted) |
+| `login` / `logout` | `session` | Player joined or left |
+| `click` | `interact` | Door, button, lever or pressure plate used |
+| `drop` / `pickup` / `craft` | `item` | Item dropped, picked up or crafted |
+| `kill` / `player-death` | `entity` | Entity killed or player died |
+| `hanging-place` / `hanging-break` | `entity` | Item frame or painting placed/broken |
+| `vehicle-break` | `entity` | Boat or minecart destroyed |
+| `tame` / `shear` / `leash` / `bucket-entity` | `entity` | Entity tamed, sheared, leashed or bucketed |
 
-The query language already knows actions and groups for things that aren't logged yet (`flow`, `fall`, `piston`, `sign`, `item`, `kill`, `entity`, `chat`, `command`, `session`, `click`, `worldedit`, ...). They are accepted but return no results until those loggers ship. See [What Gets Logged](What-Gets-Logged#not-logged-yet).
-
-A query searches **either** block history **or** container history. If every action in `a:` is a container action, it searches containers; otherwise (including no `a:` at all) it searches blocks.
+A query can combine categories (for example `a:chat,command` or `k:diamond` across chat, commands and signs) and pages across them with keyset pagination. Only `a:worldedit` is reserved for a future release.
 
 ## Sources
 

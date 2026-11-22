@@ -8,7 +8,7 @@ Most values reload with `/jo reload`. **Storage settings, queue sizes and comman
 
 | Option | Default | Description |
 |---|---|---|
-| `config-version` | `4` | Format version. **Don't change it.** It drives the automatic config update. |
+| `config-version` | `7` | Format version. **Don't change it.** It drives the automatic config update. |
 | `locale` | `en` | Language of player-facing messages: `en` or `cs` (or your own, see [Messages and Translations](Messages-and-Translations)). |
 | `update-check` | `true` | Check GitHub releases for a newer version at startup and every 12 hours. Players with `justlogs.notify` are told when they join. |
 | `command.aliases` | `[jo, jlogs]` | Short names for `/justlogs`. Restart required. Remove one if another plugin already owns it. |
@@ -26,10 +26,29 @@ A disabled logger costs nothing. See [What Gets Logged](What-Gets-Logged) for de
 | `buckets` | `true` | Water and lava buckets emptied and filled |
 | `fire` | `true` | Ignited and burned blocks, attributed to the player who lit the fire (else `#fire`, `#lava`, `#lightning`) |
 | `explosions` | `true` | TNT, creepers, beds and so on. TNT is attributed to the player who lit it (else `#tnt`). |
+| `fluids` | `true` | Water and lava flowing over other blocks (attributed to who poured the bucket, else `#water` / `#lava`) |
+| `falling-blocks` | `true` | Sand, gravel, concrete powder and anvils falling and landing |
+| `pistons` | `false` | Blocks pushed or pulled by pistons (noisy) |
+| `form-fade` | `true` | Ice, cobblestone, obsidian, concrete, portals, sponge, spread and melting/fading |
 | `growth` | `true` | Trees and mushrooms growing (the bone meal player, else `#nature`) |
+| `crop-growth` | `false` | Crops, cactus, sugar cane, bamboo and kelp growing naturally (noisy) |
 | `leaf-decay` | `false` | Leaves rotting away. Very noisy, so off by default. |
 | `entity-changes` | `true` | Endermen, farmland trampling, silverfish and other mobs changing blocks |
 | `containers` | `true` | Items put into and taken out of chests, barrels, shulker boxes, hoppers, furnaces and so on. Broken chests also keep their contents so a rollback can put them back. |
+| `signs` | `true` | Sign text edits (front and back) |
+| `chat` | `true` | Player chat messages |
+| `commands` | `true` | Executed commands (auth commands redacted automatically) |
+| `command-blacklist` | `[]` | Commands never logged (without leading slash, e.g. `[msg, tell]`) |
+| `sessions` | `true` | Player logins and logouts with HMAC-hashed IP |
+| `log-raw-ip` | `false` | Store plain IP addresses in addition to the HMAC hash |
+| `interactions` | `true` | Doors, buttons, levers, pressure plates, note blocks and bells (debounced) |
+| `item-drops` | `true` | Items dropped by players |
+| `item-pickups` | `false` | Items picked up by players |
+| `item-crafts` | `false` | Items crafted by players |
+| `entity-kills` | `true` | Entity kills, shearing, taming, leashing and bucket captures |
+| `player-deaths` | `true` | Player deaths |
+| `hanging` | `true` | Item frames and paintings placed or broken |
+| `vehicles` | `true` | Boats and minecarts destroyed |
 | `worlds-blacklist` | `[]` | Worlds that are never logged (exact names) |
 
 ## `queue`: writing to the database
@@ -64,6 +83,13 @@ Records are collected in memory and written in batches by one background thread.
 | `ms-per-tick` | `8` | Time budget per server tick while changing blocks. A big rollback takes several ticks instead of freezing the server. |
 | `preview-max-blocks` | `50000` | Largest preview. Bigger rollbacks need `/jo confirm` without `#preview`. |
 
+## `purge`
+
+| Option | Default | Description |
+|---|---|---|
+| `retention-days` | `0` | Automatically delete log rows older than this many days (`0` = disabled, manual `/jo purge` only) |
+| `interval-hours` | `24` | How often the automatic retention purge runs |
+
 ## `storage`
 
 Restart required after changes. See [Storage](Storage) for more.
@@ -84,7 +110,7 @@ Restart required after changes. See [Storage](Storage) for more.
 ## Full default file
 
 ```yaml
-config-version: 4
+config-version: 7
 locale: en
 update-check: true
 command:
@@ -98,10 +124,29 @@ logging:
   buckets: true
   fire: true
   explosions: true
+  fluids: true
+  falling-blocks: true
+  pistons: false
+  form-fade: true
   growth: true
+  crop-growth: false
   leaf-decay: false
   entity-changes: true
   containers: true
+  signs: true
+  chat: true
+  commands: true
+  command-blacklist: []
+  sessions: true
+  log-raw-ip: false
+  interactions: true
+  item-drops: true
+  item-pickups: false
+  item-crafts: false
+  entity-kills: true
+  player-deaths: true
+  hanging: true
+  vehicles: true
   worlds-blacklist: []
 
 queue:
@@ -124,6 +169,10 @@ rollback:
   confirm-expire-seconds: 60
   ms-per-tick: 8
   preview-max-blocks: 50000
+
+purge:
+  retention-days: 0
+  interval-hours: 24
 
 storage:
   type: sqlite
