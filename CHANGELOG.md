@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 - 2026-11-24
+- Rollback previews send batched block updates for chunks sent to the player. Cancelling or expiring a preview reads the real blocks on their region threads and restores the view on the player’s thread.
+- Verified block and container rollback, restore and undo across independent regions on Folia 26.3.
+
 ## 0.4.0 - 2026-11-22
 - Chat, command and session logging (`a:chat`, `a:command`, `a:session`, `+session`, `-session`):
   - Authentication commands (`/login`, `/register`, `/changepassword`, `/2fa`, `/totp`, `/email`, `/auth`) have their arguments redacted to `***` before entering the queue; `logging.command-blacklist` skips listed commands completely.

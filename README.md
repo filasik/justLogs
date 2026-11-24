@@ -38,10 +38,15 @@ Extra permissions: `justlogs.lookup.container` (look up container contents), `ju
 
 Example: `/jo rollback u:Griefer t:2h r:30 #preview`
 
+## Compatibility
+
+- Paper and Purpur on Minecraft 26.3.
+- Block and container rollback, restore and undo were tested across independent regions on Folia 26.3.
+
 ## Known limits
-- Rolling back a container only restores its item contents; other tile entities (signs, banners, heads, spawners) are not restored yet.
-- Not logged yet: fluid flow, falling blocks, pistons, signs, entities, chat, commands, sessions, WorldEdit.
-- Folia support is built in (region schedulers) but has not been tested on a Folia server.
+
+- Container rollback restores item contents. Rollback of other tile entity data, including sign text, is planned.
+- WorldEdit logging is planned.
 
 ## Configuration
 See `plugins/JustLogs/config.yml` (every option is commented). When you update the plugin, new options are added to your

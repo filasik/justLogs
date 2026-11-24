@@ -1,5 +1,6 @@
 package me.skerik.justlogs.rollback;
 
+import io.papermc.paper.math.Position;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ import me.skerik.justlogs.storage.QueryCompiler;
 import me.skerik.justlogs.storage.RollbackStore;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
@@ -200,11 +201,10 @@ public final class RollbackService {
     /** Called from a timer: drops pending operations nobody confirmed and removes their ghost blocks. */
     public void expire() {
         long now = System.currentTimeMillis();
-        pending.entrySet().removeIf(e -> {
-            if (e.getValue().expiresAtMillis() >= now) return false;
-            Player player = Bukkit.getPlayer(e.getKey());
-            if (player != null) ctx.scheduler.runForEntity(player, () -> revertPreview(player, e.getValue()), null);
-            return true;
+        pending.forEach((key, operation) -> {
+            if (operation.expiresAtMillis() >= now || !pending.remove(key, operation) || !operation.previewed()) return;
+            Player player = Bukkit.getPlayer(key);
+            if (player != null) ctx.scheduler.runForEntity(player, () -> revertPreview(player, operation), null);
         });
     }
 
@@ -253,9 +253,9 @@ public final class RollbackService {
                     restore ? RollbackStore.KIND_RESTORE : RollbackStore.KIND_ROLLBACK, null);
             return;
         }
-        pending.put(LookupService.key(sender), new Pending(plan, restore, query,
-                System.currentTimeMillis() + cfg.confirmExpireSeconds() * 1000L, preview));
         Runnable show = () -> {
+            pending.put(LookupService.key(sender), new Pending(plan, restore, query,
+                    System.currentTimeMillis() + cfg.confirmExpireSeconds() * 1000L, preview));
             if (preview && sender instanceof Player player && plan instanceof RollbackPlan blocks) showPreview(player, blocks);
             sender.sendMessage(m.get(preview ? "rollback.preview" : "rollback.confirm",
                     Messages.text("mode", m.raw(restore ? "rollback.word-restore" : "rollback.word-rollback")),
@@ -311,29 +311,37 @@ public final class RollbackService {
     /** Ghost blocks: only this player's client sees them. Must run on the player's thread. */
     private void showPreview(Player player, RollbackPlan plan) {
         Map<String, BlockData> cache = new HashMap<>();
+        World world = player.getWorld();
         for (RollbackPlan.ChunkChanges chunk : plan.chunks()) {
-            World world = Bukkit.getWorld(chunk.world());
-            if (world == null || !world.equals(player.getWorld())) continue;
+            long key = Chunk.getChunkKey(chunk.chunkX(), chunk.chunkZ());
+            if (!world.getName().equals(chunk.world()) || !player.isChunkSent(key)) continue;
+            Map<Position, BlockData> changes = new HashMap<>();
             for (RollbackPlan.Change c : chunk.changes()) {
                 BlockData data = BlockApplier.blockData(c, cache);
-                if (data != null) player.sendBlockChange(new Location(world, c.x(), c.y(), c.z()), data);
+                if (data != null) changes.put(Position.block(c.x(), c.y(), c.z()), data);
             }
+            if (!changes.isEmpty()) player.sendMultiBlockChange(changes);
         }
     }
 
-    /** Sends the real blocks back to a player who saw a preview. Any thread. */
+    /** Reads the real blocks on their region threads and sends them on the player's thread. */
     private void revertPreview(CommandSender sender, Pending p) {
         if (!p.previewed() || !(sender instanceof Player player) || !(p.plan() instanceof RollbackPlan blocks)) return;
+        World world = player.getWorld();
         for (RollbackPlan.ChunkChanges chunk : blocks.chunks()) {
-            World world = Bukkit.getWorld(chunk.world());
-            if (world == null || !world.equals(player.getWorld())) continue;
-            world.getChunkAtAsync(chunk.chunkX(), chunk.chunkZ()).thenAccept(loaded ->
-                    ctx.scheduler.runAtRegion(world, chunk.chunkX(), chunk.chunkZ(), () -> {
-                        for (RollbackPlan.Change c : chunk.changes()) {
-                            Location l = new Location(world, c.x(), c.y(), c.z());
-                            player.sendBlockChange(l, world.getBlockAt(l).getBlockData());
-                        }
-                    }));
+            long key = Chunk.getChunkKey(chunk.chunkX(), chunk.chunkZ());
+            if (!world.getName().equals(chunk.world()) || !player.isChunkSent(key)) continue;
+            ctx.scheduler.runAtRegion(world, chunk.chunkX(), chunk.chunkZ(), () -> {
+                if (!world.isChunkLoaded(chunk.chunkX(), chunk.chunkZ())) return;
+                Map<Position, BlockData> changes = new HashMap<>();
+                for (RollbackPlan.Change c : chunk.changes()) {
+                    changes.put(Position.block(c.x(), c.y(), c.z()),
+                            world.getBlockAt(c.x(), c.y(), c.z()).getBlockData());
+                }
+                ctx.scheduler.runForEntity(player, () -> {
+                    if (player.getWorld().equals(world) && player.isChunkSent(key)) player.sendMultiBlockChange(changes);
+                }, null);
+            });
         }
     }
 

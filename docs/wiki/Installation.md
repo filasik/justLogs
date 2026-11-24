@@ -7,7 +7,7 @@
 | Server | **Paper** 1.21.1 or newer (also Purpur and other Paper forks). Spigot/CraftBukkit is not supported: JustLogs is a Paper plugin (`paper-plugin.yml`). |
 | Java | 21 or newer (whatever your Paper version needs) |
 | Internet | Needed on the **first start only**, to download the database drivers |
-| Folia | Support is built in (region schedulers), but it has not been tested on a Folia server yet |
+| Folia | Block and container rollback, restore and undo tested across independent regions on 26.3 |
 
 ## Steps
 

@@ -48,11 +48,10 @@ Everything is in `plugins/JustLogs/config.yml` and commented: `logging.*` switch
 
 ## Known limits
 - Rolling back a container only restores its item contents; other tile entities (signs, banners, heads, spawners) are not restored yet.
-- Not logged yet: fluid flow, falling blocks, pistons, signs, entities, chat, commands, sessions, WorldEdit.
-- Folia support is built in (region schedulers) but has not been tested on a Folia server.
+- WorldEdit logging is planned.
 
 ## Compatibility
-- Paper (and forks: Purpur); Folia support is built in but untested
+- Paper and Purpur. Block and container rollback, restore and undo were tested across independent regions on Folia 26.3.
 - Minecraft: 26.3 (compiled against the Paper 1.21.1 API)
 - The first start needs internet access: database drivers are downloaded once from Maven Central
 

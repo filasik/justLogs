@@ -43,7 +43,7 @@ Add `#preview` to see the result before anything changes:
 Limits:
 - Players only (the console can't see ghost blocks).
 - Blocks only, not container items.
-- At most `rollback.preview-max-blocks` (50,000) blocks. For bigger rollbacks drop `#preview` and use the confirmation step.
+- The preview updates chunks already sent to your client. At most `rollback.preview-max-blocks` (50,000) blocks. For bigger rollbacks drop `#preview` and use the confirmation step.
 
 ## Confirmation
 
